@@ -28,8 +28,8 @@ export function AppShell({ children, proCard }: { children: React.ReactNode; pro
 
   return (
     <div className="flex min-h-screen w-full">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r bg-sidebar md:flex">
-        <div className="flex h-16 items-center border-b px-4">
+      <aside className="dark sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
+        <div className="flex h-16 items-center border-b border-sidebar-border px-4">
           <Brand />
         </div>
         <div className="px-3 pt-3">
@@ -38,9 +38,9 @@ export function AppShell({ children, proCard }: { children: React.ReactNode; pro
         <div className="flex-1 overflow-y-auto">
           <SidebarNav />
         </div>
-        <div className="space-y-3 border-t p-3">
+        <div className="space-y-3 border-t border-sidebar-border p-3">
           <div className="flex items-center justify-between px-1">
-            <Link href="/landing" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+            <Link href="/landing" className="flex items-center gap-1.5 text-sm text-white/70 hover:text-white">
               <Rocket className="h-3.5 w-3.5" />
               View landing page
             </Link>
@@ -60,9 +60,9 @@ export function AppShell({ children, proCard }: { children: React.ReactNode; pro
                 </Button>
               }
             />
-            <SheetContent side="left" className="w-64 p-0">
+            <SheetContent side="left" className="dark w-64 bg-sidebar p-0 text-sidebar-foreground">
               <SheetTitle className="sr-only">Navigation</SheetTitle>
-              <div className="flex h-16 items-center border-b px-4">
+              <div className="flex h-16 items-center border-b border-sidebar-border px-4">
                 <Brand />
               </div>
               <div className="px-3 pt-3">

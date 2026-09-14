@@ -46,9 +46,11 @@ export function PricingSignup() {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <section id="pricing" className="mx-auto max-w-5xl px-6 py-20">
+    <section id="pricing" className="bg-muted py-20 sm:py-24">
+      <div className="mx-auto max-w-5xl px-6">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Simple pricing</h2>
+        <p className="font-mono text-xs uppercase tracking-wide text-accent-foreground">Pricing</p>
+        <h2 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">Simple pricing</h2>
         <p className="mt-3 text-muted-foreground">Start free. Upgrade only if you need to track more at once.</p>
       </div>
 
@@ -59,20 +61,20 @@ export function PricingSignup() {
             type="button"
             onClick={() => setSelectedPlan(plan.id)}
             className={cn(
-              "rounded-2xl border p-6 text-left transition-colors",
+              "rounded-2xl border bg-card p-6 text-left transition-colors",
               plan.highlighted && "border-primary",
               selectedPlan === plan.id ? "ring-2 ring-primary" : "hover:border-primary/50"
             )}
           >
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">{plan.name}</h3>
+              <h3 className="font-bold">{plan.name}</h3>
               {plan.highlighted && (
-                <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
                   Popular
                 </span>
               )}
             </div>
-            <p className="mt-2 text-3xl font-bold">
+            <p className="mt-2 text-3xl font-extrabold">
               {plan.price}
               <span className="text-base font-normal text-muted-foreground"> {plan.cadence}</span>
             </p>
@@ -80,7 +82,7 @@ export function PricingSignup() {
             <ul className="mt-4 space-y-2 text-sm">
               {plan.features.map((feature) => (
                 <li key={feature} className="flex items-start gap-2">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-foreground" />
                   {feature}
                 </li>
               ))}
@@ -89,13 +91,13 @@ export function PricingSignup() {
         ))}
       </div>
 
-      <div id="signup" className="mx-auto mt-16 max-w-md scroll-mt-24 rounded-2xl border bg-card p-8">
+      <div id="signup" className="mx-auto mt-16 max-w-md scroll-mt-24 rounded-2xl border border-border bg-card p-8 shadow-[0_20px_40px_-24px_rgba(10,31,20,0.2)]">
         {submitted ? (
           <div className="text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground">
               <Rocket className="h-6 w-6" />
             </div>
-            <h3 className="font-semibold">You&apos;re signed up</h3>
+            <h3 className="font-bold">You&apos;re signed up</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {selectedPlan === "PRO" ? "Your account is set to Pro." : "Your account is set to Free."} Head into the
               app to get started.
@@ -106,7 +108,7 @@ export function PricingSignup() {
           </div>
         ) : (
           <>
-            <h3 className="font-semibold">Get started — {selectedPlan === "PRO" ? "Pro" : "Free"} plan</h3>
+            <h3 className="font-bold">Get started — {selectedPlan === "PRO" ? "Pro" : "Free"} plan</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               This app runs locally, so signing up just sets up your local profile — no payment is processed.
             </p>
@@ -140,6 +142,7 @@ export function PricingSignup() {
             </form>
           </>
         )}
+      </div>
       </div>
     </section>
   );
