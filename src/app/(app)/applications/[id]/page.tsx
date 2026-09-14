@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil, Globe, MapPin, Building2, CalendarClock } from "lucide-react";
+import { Pencil, Globe, MapPin, Building2, PoundSterling, FileCheck2 } from "lucide-react";
 import { LinkButton } from "@/components/shared/link-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +8,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ActivityLog } from "@/components/activities/activity-log";
 import { DocumentsPanel } from "@/components/documents/documents-panel";
 import { DeleteButton } from "@/components/shared/delete-button";
+import { DeadlineBadge } from "@/components/applications/deadline-badge";
 import { getApplication } from "@/lib/data/applications";
 import { getBaseDocuments } from "@/lib/data/documents";
 import { deleteApplication } from "@/lib/actions/applications";
-import { applicationStatusLabels, applicationStatusVariants } from "@/lib/labels";
+import { applicationStatusLabels, applicationStatusColors, priorityLabels, priorityColors } from "@/lib/labels";
 import { formatDate } from "@/lib/format";
 
 export default async function ApplicationDetailPage({
@@ -32,6 +33,10 @@ export default async function ApplicationDetailPage({
         description={application.employer?.name}
         actions={
           <>
+            <LinkButton href={`/check-cv?applicationId=${application.id}`} variant="outline">
+              <FileCheck2 className="h-4 w-4" />
+              Check My CV
+            </LinkButton>
             <LinkButton href={`/applications/${application.id}/edit`} variant="outline">
               <Pencil className="h-4 w-4" />
               Edit
@@ -52,9 +57,12 @@ export default async function ApplicationDetailPage({
               <CardTitle className="text-base">Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div>
-                <Badge variant={applicationStatusVariants[application.status]}>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge className={applicationStatusColors[application.status]} variant="outline">
                   {applicationStatusLabels[application.status]}
+                </Badge>
+                <Badge className={priorityColors[application.priority]} variant="outline">
+                  {priorityLabels[application.priority]}
                 </Badge>
               </div>
               {application.employer && (
@@ -79,12 +87,13 @@ export default async function ApplicationDetailPage({
                   </a>
                 </div>
               )}
-              {application.deadline && (
+              {application.salary && (
                 <div className="flex items-center gap-2">
-                  <CalendarClock className="h-4 w-4 text-muted-foreground" />
-                  Deadline {formatDate(application.deadline)}
+                  <PoundSterling className="h-4 w-4 text-muted-foreground" />
+                  {application.salary}
                 </div>
               )}
+              {application.deadline && <DeadlineBadge deadline={application.deadline} />}
               {application.source && <p className="text-muted-foreground">Source: {application.source}</p>}
               {application.appliedAt && (
                 <p className="text-muted-foreground">Applied {formatDate(application.appliedAt)}</p>

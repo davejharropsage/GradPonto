@@ -1,4 +1,4 @@
-// Prisma schema for Placement Application Tracker
+// Prisma schema for PlacementPilot
 // Learn more: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -12,14 +12,21 @@ datasource db {
 }
 
 enum ApplicationStatus {
-  SAVED
-  DRAFTING
+  INTERESTED
+  NOT_STARTED
+  PREPARING
   APPLIED
-  IN_REVIEW
-  INTERVIEW
+  ONLINE_ASSESSMENT
+  VIDEO_INTERVIEW
   OFFER
   REJECTED
   WITHDRAWN
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 enum DocumentKind {
@@ -33,6 +40,33 @@ enum ActivityType {
   NOTE
   FOLLOW_UP
   STATUS_CHANGE
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+// Single-row table holding the local user's display name and plan.
+// There is no authentication in this app (single local user) — this just
+// drives the dashboard greeting and the "Pro" upsell state.
+model Profile {
+  id   String @id @default("default")
+  name String?
+  plan Plan    @default(FREE)
+
+  updatedAt DateTime @updatedAt
+}
+
+// Captured from the public landing page's sign-up form. Not wired to real
+// billing (no Stripe keys) — see ARCHITECTURE.md for what a real
+// subscription flow would need.
+model Signup {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
 }
 
 model Employer {
@@ -57,8 +91,10 @@ model Application {
   jobUrl      String?
   description String? // the job posting text, used as tailoring input
   source      String? // e.g. "university portal", "LinkedIn", referral
+  salary      String? // free text, e.g. "£24,000" or "£350/week"
   deadline    DateTime?
-  status      ApplicationStatus @default(SAVED)
+  status      ApplicationStatus @default(INTERESTED)
+  priority    Priority          @default(MEDIUM)
   appliedAt   DateTime?
   notes       String?
 

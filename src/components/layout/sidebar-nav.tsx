@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { navLinks } from "./nav-links";
+import { navLinks, comingSoonLinks } from "./nav-links";
+import { Badge } from "@/components/ui/badge";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -30,6 +31,24 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </Link>
         );
       })}
+
+      <div className="mt-2 border-t pt-2">
+        {comingSoonLinks.map((link) => {
+          const Icon = link.icon;
+          return (
+            <div
+              key={link.label}
+              className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground/50"
+            >
+              <Icon className="h-4 w-4" />
+              <span className="flex-1">{link.label}</span>
+              <Badge variant="outline" className="text-[10px] text-muted-foreground/70">
+                Soon
+              </Badge>
+            </div>
+          );
+        })}
+      </div>
     </nav>
   );
 }

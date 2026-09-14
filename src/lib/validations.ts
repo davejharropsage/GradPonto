@@ -9,25 +9,32 @@ export const employerSchema = z.object({
 
 export type EmployerInput = z.infer<typeof employerSchema>;
 
+const applicationStatusEnum = z.enum([
+  "INTERESTED",
+  "NOT_STARTED",
+  "PREPARING",
+  "APPLIED",
+  "ONLINE_ASSESSMENT",
+  "VIDEO_INTERVIEW",
+  "OFFER",
+  "REJECTED",
+  "WITHDRAWN",
+]);
+
+const priorityEnum = z.enum(["LOW", "MEDIUM", "HIGH"]);
+
 export const applicationSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
+  company: z.string().trim().min(1, "Company is required"),
   location: z.string().trim().optional().or(z.literal("")),
   jobUrl: z.string().trim().optional().or(z.literal("")),
   description: z.string().trim().optional().or(z.literal("")),
   source: z.string().trim().optional().or(z.literal("")),
+  salary: z.string().trim().optional().or(z.literal("")),
   deadline: z.string().trim().optional().or(z.literal("")),
-  status: z.enum([
-    "SAVED",
-    "DRAFTING",
-    "APPLIED",
-    "IN_REVIEW",
-    "INTERVIEW",
-    "OFFER",
-    "REJECTED",
-    "WITHDRAWN",
-  ]),
+  status: applicationStatusEnum,
+  priority: priorityEnum,
   notes: z.string().trim().optional().or(z.literal("")),
-  employerId: z.string().trim().optional().or(z.literal("")),
 });
 
 export type ApplicationInput = z.infer<typeof applicationSchema>;
@@ -47,3 +54,17 @@ export const documentSchema = z.object({
 });
 
 export type DocumentInput = z.infer<typeof documentSchema>;
+
+export const signupSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  email: z.string().trim().email("Enter a valid email"),
+  plan: z.enum(["FREE", "PRO"]),
+});
+
+export type SignupInput = z.infer<typeof signupSchema>;
+
+export const profileSchema = z.object({
+  name: z.string().trim().optional().or(z.literal("")),
+});
+
+export type ProfileInput = z.infer<typeof profileSchema>;

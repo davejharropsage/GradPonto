@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
 import { ApplicationFilters } from "@/components/applications/application-filters";
-import { ApplicationsTable } from "@/components/applications/applications-table";
+import { ApplicationsGrid } from "@/components/applications/applications-grid";
 import { getApplications } from "@/lib/data/applications";
 
 export default async function ApplicationsPage({
@@ -56,7 +56,7 @@ export default async function ApplicationsPage({
         />
       ) : (
         <>
-          <ApplicationsTable applications={applications} />
+          <ApplicationsGrid applications={applications} />
           <Pagination
             page={page}
             totalPages={totalPages}

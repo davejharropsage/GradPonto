@@ -1,13 +1,5 @@
-export function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
 export function formatDate(date: Date | string) {
-  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(date));
+  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date(date));
 }
 
 export function formatRelativeTime(date: Date | string) {
@@ -22,4 +14,16 @@ export function formatRelativeTime(date: Date | string) {
   if (Math.abs(diffHours) < 24) return rtf.format(diffHours, "hour");
   const diffDays = Math.round(diffHours / 24);
   return rtf.format(diffDays, "day");
+}
+
+export function daysUntil(date: Date | string) {
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+export function isOverdue(date: Date | string) {
+  return daysUntil(date) < 0;
 }

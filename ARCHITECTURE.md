@@ -52,3 +52,27 @@ This is a single-user, localhost-only tool. Authentication adds meaningful compl
 ## Why AI tailoring and PDF export are isolated in `lib/ai/` and `lib/pdf/`
 
 Both are optional, single-purpose capabilities with an external dependency (an API key; a rendering library). Keeping them in their own files with a narrow function signature (`tailorDocument(...)`, `renderDocumentToPdf(...)`) means either could be swapped for a different provider or library later by touching one file, not scattered call sites.
+
+## Why `(app)` is a route group, and `/landing` sits outside it
+
+The public landing page needed to render without the sidebar/header chrome, while every other page needed it. Rather than adding a conditional inside one shared layout (which would need to know about every current and future route), the sidebar shell moved into `src/app/(app)/layout.tsx` — a [route group](https://nextjs.org/docs/app/building-your-application/routing/route-groups), which organizes routes without adding a `/app` segment to the URL. `src/app/layout.tsx` (the real root layout) now only sets up fonts, the theme provider, and the toast host; `src/app/landing/page.tsx` is a sibling of `(app)`, so it inherits the root layout but not the sidebar. Moving a page in or out of the sidebar shell going forward is just moving its folder in or out of `(app)/`.
+
+## Why the company field became free text instead of a picker
+
+Earlier, `Application` had an `employerId` foreign key filled from a `<Select>` of existing employers, which meant creating a new employer was a separate trip to `/employers/new` before you could even log an application. The reference design treats "company" as a plain field on the application card, so `lib/actions/applications.ts` now has `upsertEmployerId(name)`: it looks up an `Employer` by exact name and creates one if none exists, called from both `createApplication` and `updateApplication`. The form itself is a plain text `<Input>` with a `<datalist>` of existing employer names for autocomplete — no client-side JS needed for that part. The `Employer` model and its own CRUD pages are unchanged and still useful (deduping, and a place to hang future employer-level notes/industry data); they're just no longer in the critical path of logging an application.
+
+## Why the Pipeline board uses native HTML5 drag-and-drop instead of a library
+
+`react-dnd` or `@dnd-kit` would add a real dependency for something the platform already does: `draggable`, `onDragStart`, `onDragOver`, `onDrop` are enough for a single-column-to-column kanban move with no reordering-within-a-column requirement. `PipelineBoard` (`src/components/pipeline/pipeline-board.tsx`) keeps its own optimistic `useState` copy of the grouped applications, updates it synchronously on drop for instant visual feedback, then calls the `updateApplicationStatus` server action in a transition and `router.refresh()` afterward to reconcile with the database (which also picks up the auto-logged `STATUS_CHANGE` activity). If this ever needs touch-screen support or reordering within a column, that's the point to reach for a real library — the current approach doesn't support touch drag.
+
+## Why "Analyse a Job" fetches URLs with a regex strip instead of a readability library
+
+Pulling the visible text out of an arbitrary job-posting page well enough for Claude to extract fields from doesn't need pixel-perfect content extraction — `fetchJobFromUrl` (`lib/actions/analyze.ts`) does a server-side `fetch`, strips `<script>`/`<style>` blocks and all remaining tags with a regex, collapses whitespace, and caps the result at 12,000 characters before handing it to the model. A real readability parser (e.g. `@mozilla/readability` + `jsdom`) would produce cleaner text and handle edge cases (paywalls, SPA-rendered job boards that need a headless browser) better, at the cost of two more dependencies including a DOM implementation. Worth revisiting if job pages with heavy client-side rendering turn out to return mostly-empty text.
+
+## Why AI job analysis and CV matching return JSON instead of structured tool calls
+
+Both `analyzeJobDescription` and `matchCvToJob` (`lib/ai/`) prompt Claude to reply with a raw JSON object and parse it with `extractJson` (`lib/ai/client.ts`), rather than using the Anthropic SDK's tool-use/structured-output support. For a single fixed-shape response per call with no multi-turn tool loop, this is simpler to read and debug (the prompt *is* the schema) at a small robustness cost — `extractJson` strips a stray ```json fence if the model adds one, but a genuinely malformed response will throw and surface as a toast error rather than being caught by schema validation. If these prompts grow more complex, switching to the SDK's structured output support would be the more robust choice.
+
+## Why sign-up and the Pro plan toggle are local-only, not real billing
+
+Nothing in this app has a real backend to hold a Stripe (or similar) secret key safely, and there's no authentication to tie a subscription to. `createSignup` and `setPlan` (`lib/actions/signup.ts`, `lib/actions/profile.ts`) write directly to the local `Signup` and `Profile` tables — no network call, no charge. This mirrors the shape a real flow would have (a `Plan` enum on the user, an upgrade action) so that wiring up real billing later is a matter of replacing those two functions' bodies, not restructuring the schema. See the README's "Real subscriptions / billing" section for what that would actually take.

@@ -1,17 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
-
-export class TailorNotConfiguredError extends Error {
-  constructor() {
-    super("ANTHROPIC_API_KEY is not set — AI tailoring is unavailable. Add it to .env to enable this feature.");
-    this.name = "TailorNotConfiguredError";
-  }
-}
-
-function getClient() {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new TailorNotConfiguredError();
-  return new Anthropic({ apiKey });
-}
+import { getClient } from "./client";
 
 const KIND_INSTRUCTIONS: Record<string, string> = {
   CV: "Adjust emphasis, ordering, and wording of the CV to highlight the experience most relevant to this job. Do not invent experience that isn't in the base CV. Keep the same overall structure and length.",
