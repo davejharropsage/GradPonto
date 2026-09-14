@@ -1,0 +1,103 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Pencil, Globe, FileText } from "lucide-react";
+import { LinkButton } from "@/components/shared/link-button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
+import { DeleteButton } from "@/components/shared/delete-button";
+import { getEmployer } from "@/lib/data/employers";
+import { deleteEmployer } from "@/lib/actions/employers";
+import { applicationStatusLabels, applicationStatusVariants } from "@/lib/labels";
+import { formatDate } from "@/lib/format";
+
+export default async function EmployerDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const employer = await getEmployer(id);
+  if (!employer) notFound();
+
+  return (
+    <div>
+      <PageHeader
+        title={employer.name}
+        description={employer.industry ?? undefined}
+        actions={
+          <>
+            <LinkButton href={`/employers/${employer.id}/edit`} variant="outline">
+              <Pencil className="h-4 w-4" />
+              Edit
+            </LinkButton>
+            <DeleteButton
+              action={deleteEmployer.bind(null, employer.id)}
+              label="Delete Employer"
+              redirectTo="/employers"
+            />
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {employer.website && (
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  {employer.website}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Created {formatDate(employer.createdAt)} &middot; Updated {formatDate(employer.updatedAt)}
+              </p>
+            </CardContent>
+          </Card>
+
+          {employer.notes && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{employer.notes}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Applications</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {employer.applications.length === 0 ? (
+                <EmptyState icon={FileText} title="No applications yet" />
+              ) : (
+                <ul className="divide-y">
+                  {employer.applications.map((application) => (
+                    <li key={application.id} className="flex items-center justify-between gap-2 py-3">
+                      <Link href={`/applications/${application.id}`} className="text-sm font-medium hover:underline">
+                        {application.title}
+                      </Link>
+                      <Badge variant={applicationStatusVariants[application.status]}>
+                        {applicationStatusLabels[application.status]}
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

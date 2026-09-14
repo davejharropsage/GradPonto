@@ -1,0 +1,112 @@
+// Prisma schema for Placement Application Tracker
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum ApplicationStatus {
+  SAVED
+  DRAFTING
+  APPLIED
+  IN_REVIEW
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+enum DocumentKind {
+  CV
+  COVER_LETTER
+}
+
+enum ActivityType {
+  INTERVIEW
+  TASK
+  NOTE
+  FOLLOW_UP
+  STATUS_CHANGE
+}
+
+model Employer {
+  id       String  @id @default(cuid())
+  name     String
+  website  String?
+  industry String?
+  notes    String?
+
+  applications Application[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+model Application {
+  id          String            @id @default(cuid())
+  title       String
+  location    String?
+  jobUrl      String?
+  description String? // the job posting text, used as tailoring input
+  source      String? // e.g. "university portal", "LinkedIn", referral
+  deadline    DateTime?
+  status      ApplicationStatus @default(SAVED)
+  appliedAt   DateTime?
+  notes       String?
+
+  employer   Employer? @relation(fields: [employerId], references: [id])
+  employerId String?
+
+  documents  Document[]
+  activities Activity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employerId])
+  @@index([status])
+  @@index([deadline])
+}
+
+model Document {
+  id             String       @id @default(cuid())
+  kind           DocumentKind
+  isBase         Boolean      @default(false) // base documents have applicationId = null
+  content        String // markdown / plain text
+  generatedByAI  Boolean      @default(false)
+
+  application   Application? @relation(fields: [applicationId], references: [id])
+  applicationId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([kind])
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  subject     String
+  notes       String?
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  application   Application? @relation(fields: [applicationId], references: [id])
+  applicationId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([dueDate])
+}
