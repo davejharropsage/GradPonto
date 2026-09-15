@@ -27,7 +27,7 @@ export function AnalyseJobForm({ aiAvailable }: { aiAvailable: boolean }) {
       try {
         const { text: fetched } = await fetchJobFromUrl(url.trim());
         setText(fetched);
-        toast.success("Pulled the page text — review it below before analysing.");
+        toast.success("Pulled the page text. Review it below before analysing.");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Could not fetch that URL");
       }

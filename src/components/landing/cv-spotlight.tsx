@@ -4,7 +4,7 @@ import { LinkButton } from "@/components/shared/link-button";
 const points = [
   "Keyword and skills gaps flagged line by line",
   "Rewrite suggestions you can accept in one click",
-  "Works from a CV you already have on file — no re-uploading per job",
+  "Works from a CV you already have on file, no re-uploading per job",
 ];
 
 export function CvSpotlight() {
@@ -18,7 +18,7 @@ export function CvSpotlight() {
           </h2>
           <p className="mt-3 text-muted-foreground">
             Paste any placement listing. PlacementPilot reads it, checks it against your CV, and tells you exactly
-            which lines to rewrite — then drafts a cover letter tailored to that role.
+            which lines to rewrite, then drafts a cover letter tailored to that role.
           </p>
 
           <ul className="mt-6 space-y-2.5">

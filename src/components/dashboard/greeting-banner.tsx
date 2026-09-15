@@ -16,7 +16,7 @@ export function GreetingBanner({
       <p className="mt-1 text-white/70">
         {applicationsThisWeek > 0
           ? `You've made ${applicationsThisWeek} application${applicationsThisWeek === 1 ? "" : "s"} this week. Keep it up!`
-          : "No applications yet this week — browse Analyse a Job to find your next one."}
+          : "No applications yet this week. Browse Analyse a Job to find your next one."}
       </p>
     </div>
   );

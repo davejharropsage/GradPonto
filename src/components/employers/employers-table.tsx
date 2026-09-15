@@ -31,8 +31,8 @@ export function EmployersTable({ employers }: { employers: EmployerWithCounts[] 
                   {employer.name}
                 </Link>
               </TableCell>
-              <TableCell>{employer.industry || <span className="text-muted-foreground">—</span>}</TableCell>
-              <TableCell>{employer.website || <span className="text-muted-foreground">—</span>}</TableCell>
+              <TableCell>{employer.industry || <span className="text-muted-foreground">-</span>}</TableCell>
+              <TableCell>{employer.website || <span className="text-muted-foreground">-</span>}</TableCell>
               <TableCell>{employer._count.applications}</TableCell>
             </TableRow>
           ))}

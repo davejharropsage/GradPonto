@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 export class AiNotConfiguredError extends Error {
   constructor() {
-    super("ANTHROPIC_API_KEY is not set — AI features are unavailable. Add it to .env to enable them.");
+    super("ANTHROPIC_API_KEY is not set. AI features are unavailable. Add it to .env to enable them.");
     this.name = "AiNotConfiguredError";
   }
 }

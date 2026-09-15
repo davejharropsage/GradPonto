@@ -2,7 +2,7 @@ const steps = [
   {
     number: "1",
     title: "Log an opportunity",
-    description: "Paste a job link or description into Analyse a Job — we'll extract the role, company, and deadline.",
+    description: "Paste a job link or description into Analyse a Job. We'll extract the role, company, and deadline.",
   },
   {
     number: "2",
@@ -12,7 +12,7 @@ const steps = [
   {
     number: "3",
     title: "Track it to offer",
-    description: "Drag it through the pipeline as it moves from Applied to Interview to Offer — deadlines included.",
+    description: "Drag it through the pipeline as it moves from Applied to Interview to Offer. Deadlines included.",
   },
 ];
 

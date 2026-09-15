@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   const title = document.application
-    ? `${documentKindLabels[document.kind]} — ${document.application.title}`
+    ? `${documentKindLabels[document.kind]}: ${document.application.title}`
     : documentKindLabels[document.kind];
 
   const pdfBuffer = await renderDocumentToPdf(title, document.content);

@@ -18,13 +18,13 @@ export function Hero() {
           </h1>
 
           <p className="mt-5 max-w-lg text-lg text-muted-foreground">
-            Track every application, tailor your CV and cover letter with AI, and never miss a deadline — all in one
+            Track every application, tailor your CV and cover letter with AI, and never miss a deadline. All in one
             board that runs entirely on your own device.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <LinkButton href="#signup" size="lg">
-              Sign up — free
+              Sign up for free
             </LinkButton>
             <LinkButton href="#features" variant="outline" size="lg">
               See how it works

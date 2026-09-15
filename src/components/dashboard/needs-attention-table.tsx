@@ -37,7 +37,7 @@ export function NeedsAttentionTable({ rows }: { rows: Row[] }) {
                       </td>
                       <td className="py-3 font-medium">
                         <Link href={`/applications/${row.id}`} className="hover:underline">
-                          {row.employer?.name ?? "—"}
+                          {row.employer?.name ?? "-"}
                         </Link>
                       </td>
                       <td className="py-3 text-muted-foreground">{row.title}</td>

@@ -40,11 +40,11 @@ export default async function AccountPage() {
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
             {profile.plan === "PRO"
-              ? "You're on PlacementPilot Pro — unlimited applications and advanced analytics."
+              ? "You're on PlacementPilot Pro: unlimited applications and advanced analytics."
               : "You're on the Free plan. Upgrade to Pro for unlimited applications and advanced analytics."}
           </p>
           <p className="text-xs text-muted-foreground">
-            This app runs entirely on your own machine — there is no real payment processor connected. Choosing
+            This app runs entirely on your own machine. There is no real payment processor connected. Choosing
             Pro here just flips a local flag; see the landing page for the pricing this mirrors.
           </p>
           <form action={async () => { "use server"; await setPlan(profile.plan === "PRO" ? "FREE" : "PRO"); }}>

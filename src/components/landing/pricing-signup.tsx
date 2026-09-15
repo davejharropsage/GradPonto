@@ -108,9 +108,9 @@ export function PricingSignup() {
           </div>
         ) : (
           <>
-            <h3 className="font-bold">Get started — {selectedPlan === "PRO" ? "Pro" : "Free"} plan</h3>
+            <h3 className="font-bold">Get started: {selectedPlan === "PRO" ? "Pro" : "Free"} plan</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              This app runs locally, so signing up just sets up your local profile — no payment is processed.
+              This app runs locally, so signing up just sets up your local profile. No payment is processed.
             </p>
             <form
               className="mt-4 grid gap-3"
@@ -121,7 +121,7 @@ export function PricingSignup() {
                     await createSignup(formData);
                     setSubmitted(true);
                   } catch {
-                    setError("Something went wrong — check your details and try again.");
+                    setError("Something went wrong. Check your details and try again.");
                   }
                 });
               }}

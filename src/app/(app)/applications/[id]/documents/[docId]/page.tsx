@@ -33,7 +33,7 @@ export default async function ApplicationDocumentPage({
             {document.generatedByAI && (
               <Badge variant="secondary" className="gap-1">
                 <Sparkles className="h-3 w-3" />
-                AI drafted — review before use
+                AI drafted, review before use
               </Badge>
             )}
             <ExportPdfButton documentId={document.id} />

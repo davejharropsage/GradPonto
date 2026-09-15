@@ -98,7 +98,7 @@ export function CheckCvForm({
                     <SelectItem key={doc.id} value={doc.id}>
                       {doc.isBase
                         ? "Base CV"
-                        : `Tailored — ${doc.application?.employer?.name ?? "Unknown"} (${doc.application?.title ?? ""})`}
+                        : `Tailored for ${doc.application?.employer?.name ?? "Unknown"} (${doc.application?.title ?? ""})`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -125,7 +125,7 @@ export function CheckCvForm({
                     <Upload className="h-3.5 w-3.5" />
                     {uploading ? "Reading file..." : "Upload a file"}
                   </Button>
-                  <span className="text-xs text-muted-foreground">PDF, DOCX, or TXT — up to 10MB</span>
+                  <span className="text-xs text-muted-foreground">PDF, DOCX, or TXT (up to 10MB)</span>
                 </div>
 
                 {uploadedFilename && (
@@ -176,14 +176,14 @@ export function CheckCvForm({
                 <SelectValue placeholder="Choose a job application...">
                   {(value: string) => {
                     const app = applications.find((a) => a.id === value);
-                    return app ? `${app.employer?.name ?? "Unknown"} — ${app.title}` : "Choose a job application...";
+                    return app ? `${app.employer?.name ?? "Unknown"}: ${app.title}` : "Choose a job application...";
                   }}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {applications.map((app) => (
                   <SelectItem key={app.id} value={app.id}>
-                    {app.employer?.name ?? "Unknown"} — {app.title}
+                    {app.employer?.name ?? "Unknown"}: {app.title}
                   </SelectItem>
                 ))}
               </SelectContent>

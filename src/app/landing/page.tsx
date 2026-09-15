@@ -8,7 +8,7 @@ import { PricingSignup } from "@/components/landing/pricing-signup";
 import { LandingFooter } from "@/components/landing/landing-footer";
 
 export const metadata: Metadata = {
-  title: "PlacementPilot — Track your placement search",
+  title: "PlacementPilot: Track your placement search",
   description: "Track applications, tailor your CV with AI, and never miss a deadline.",
 };
 

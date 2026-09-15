@@ -29,7 +29,7 @@ const features = [
   {
     icon: LockKeyhole,
     title: "100% local",
-    description: "Everything runs on your own machine with a local database — nothing uploaded to the cloud.",
+    description: "Everything runs on your own machine with a local database. Nothing uploaded to the cloud.",
   },
 ];
 

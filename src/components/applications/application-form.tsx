@@ -72,9 +72,9 @@ export function ApplicationForm({
           if (fields.location) setLocation(fields.location);
           if (fields.salary) setSalary(fields.salary);
           if (fields.deadline) setDeadline(fields.deadline);
-          toast.success("Filled in from the job listing — review before saving.");
+          toast.success("Filled in from the job listing. Review before saving.");
         } else {
-          toast.success("Pulled the job description — add an ANTHROPIC_API_KEY to auto-fill the other fields too.");
+          toast.success("Pulled the job description. Add an ANTHROPIC_API_KEY to auto-fill the other fields too.");
         }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Couldn't read that URL");
@@ -202,7 +202,7 @@ export function ApplicationForm({
           rows={6}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Paste the job posting here — used as input when tailoring your CV and cover letter."
+          placeholder="Paste the job posting here. Used as input when tailoring your CV and cover letter."
         />
       </div>
 

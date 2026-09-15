@@ -16,7 +16,7 @@ export default async function DocumentsPage() {
     <div>
       <PageHeader
         title="Base Documents"
-        description="Your master CV and cover letter — every tailored version starts from these."
+        description="Your master CV and cover letter. Every tailored version starts from these."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

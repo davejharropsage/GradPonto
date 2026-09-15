@@ -93,7 +93,7 @@ export function AddDocumentButton({
           </Select>
           {!baseDoc && (
             <p className="text-xs text-destructive">
-              No base {documentKindLabels[kind]} yet — add one on the Documents page first.
+              No base {documentKindLabels[kind]} yet. Add one on the Documents page first.
             </p>
           )}
         </div>
