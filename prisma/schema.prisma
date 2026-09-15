@@ -137,6 +137,20 @@ model Document {
   @@index([kind])
 }
 
+// A target like "10 applications this month" — progress is always computed
+// live from Application.createdAt, never stored, so it can't drift out of
+// sync with the actual data.
+model Goal {
+  id        String   @id @default(cuid())
+  target    Int
+  startDate DateTime
+  endDate   DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([startDate, endDate])
+}
+
 model Activity {
   id          String       @id @default(cuid())
   type        ActivityType

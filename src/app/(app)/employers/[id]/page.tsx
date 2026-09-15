@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DeleteButton } from "@/components/shared/delete-button";
-import { getEmployer } from "@/lib/data/employers";
+import { MergeEmployerDialog } from "@/components/employers/merge-employer-dialog";
+import { getEmployer, getEmployerOptions } from "@/lib/data/employers";
 import { deleteEmployer } from "@/lib/actions/employers";
 import { applicationStatusLabels, applicationStatusVariants } from "@/lib/labels";
 import { formatDate } from "@/lib/format";
@@ -18,7 +19,7 @@ export default async function EmployerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const employer = await getEmployer(id);
+  const [employer, allEmployers] = await Promise.all([getEmployer(id), getEmployerOptions()]);
   if (!employer) notFound();
 
   return (
@@ -32,6 +33,11 @@ export default async function EmployerDetailPage({
               <Pencil className="h-4 w-4" />
               Edit
             </LinkButton>
+            <MergeEmployerDialog
+              employerId={employer.id}
+              employerName={employer.name}
+              otherEmployers={allEmployers.filter((e) => e.id !== employer.id)}
+            />
             <DeleteButton
               action={deleteEmployer.bind(null, employer.id)}
               label="Delete Employer"

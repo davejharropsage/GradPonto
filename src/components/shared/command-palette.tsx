@@ -11,6 +11,7 @@ import {
   FileCheck2,
   Building2,
   Plus,
+  Target,
 } from "lucide-react";
 import {
   Command,
@@ -32,6 +33,7 @@ const quickActions = [
   { label: "Analyse a Job", href: "/analyse-job", icon: Sparkles },
   { label: "Check My CV", href: "/check-cv", icon: FileCheck2 },
   { label: "Companies", href: "/employers", icon: Building2 },
+  { label: "Goals", href: "/goals", icon: Target },
   { label: "New Application", href: "/applications/new", icon: Plus },
 ];
 

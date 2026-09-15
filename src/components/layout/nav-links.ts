@@ -18,10 +18,8 @@ export const navLinks = [
   { href: "/analyse-job", label: "Analyse a Job", icon: Sparkles },
   { href: "/check-cv", label: "Check My CV", icon: FileCheck2 },
   { href: "/employers", label: "Companies", icon: Building2 },
+  { href: "/goals", label: "Goals", icon: Target },
 ];
 
 // Not built yet — shown disabled with a "Soon" badge, matching the product roadmap.
-export const comingSoonLinks = [
-  { label: "Analytics", icon: BarChart3 },
-  { label: "Goals", icon: Target },
-];
+export const comingSoonLinks = [{ label: "Analytics", icon: BarChart3 }];

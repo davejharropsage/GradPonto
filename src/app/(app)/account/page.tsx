@@ -1,9 +1,12 @@
+import { Download } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/shared/link-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { RestoreBackupForm } from "@/components/settings/restore-backup-form";
 import { getProfile } from "@/lib/data/profile";
 import { updateProfile, setPlan } from "@/lib/actions/profile";
 
@@ -52,6 +55,25 @@ export default async function AccountPage() {
               {profile.plan === "PRO" ? "Switch to Free" : "Upgrade to Pro"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Data</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Everything in this app lives in a single local database file. A backup is a complete, portable copy of
+            it: applications, employers, documents, notes, activity history, and goals.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <LinkButton href="/api/backup/export" variant="outline">
+              <Download className="h-4 w-4" />
+              Download full backup
+            </LinkButton>
+            <RestoreBackupForm />
+          </div>
         </CardContent>
       </Card>
     </div>

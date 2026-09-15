@@ -47,3 +47,19 @@ export async function deleteEmployer(id: string) {
   await db.employer.delete({ where: { id } });
   revalidatePath("/employers");
 }
+
+// Reassigns every application from `sourceId` to `targetId`, then removes
+// the now-empty source employer. Applications are never lost; the source
+// employer's own notes/website/industry are discarded since they can't be
+// reconciled automatically.
+export async function mergeEmployers(sourceId: string, targetId: string) {
+  if (sourceId === targetId) throw new Error("Can't merge an employer into itself");
+
+  await db.$transaction([
+    db.application.updateMany({ where: { employerId: sourceId }, data: { employerId: targetId } }),
+    db.employer.delete({ where: { id: sourceId } }),
+  ]);
+
+  revalidatePath("/employers");
+  revalidatePath(`/employers/${targetId}`);
+}

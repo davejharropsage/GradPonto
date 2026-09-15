@@ -14,7 +14,7 @@ function toDate(value: string | undefined) {
   return value && value.trim() !== "" ? new Date(value) : null;
 }
 
-async function upsertEmployerId(name: string) {
+export async function upsertEmployerId(name: string) {
   const trimmed = name.trim();
   const existing = await db.employer.findFirst({ where: { name: trimmed } });
   if (existing) return existing.id;

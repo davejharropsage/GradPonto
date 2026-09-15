@@ -1,4 +1,4 @@
-import { Plus, FileText, Download } from "lucide-react";
+import { Plus, FileText, Download, Upload } from "lucide-react";
 import { LinkButton } from "@/components/shared/link-button";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -30,6 +30,10 @@ export default async function ApplicationsPage({
         description={`${total} application${total === 1 ? "" : "s"}`}
         actions={
           <>
+            <LinkButton href="/applications/import" variant="outline">
+              <Upload className="h-4 w-4" />
+              Import CSV
+            </LinkButton>
             <LinkButton href="/api/applications/export" variant="outline">
               <Download className="h-4 w-4" />
               Export CSV
