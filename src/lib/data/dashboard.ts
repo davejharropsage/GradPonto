@@ -70,6 +70,22 @@ export function getUpcomingDeadlines(limit = 8) {
   });
 }
 
+// Applications sitting in an early, pre-application stage that haven't been
+// touched in a while — easy to quietly forget about.
+export function getStaleApplications(limit = 6, staleAfterDays = 14) {
+  const cutoff = new Date(Date.now() - staleAfterDays * 24 * 60 * 60 * 1000);
+
+  return db.application.findMany({
+    where: {
+      status: { in: ["INTERESTED", "PREPARING"] },
+      updatedAt: { lt: cutoff },
+    },
+    include: { employer: true },
+    orderBy: { updatedAt: "asc" },
+    take: limit,
+  });
+}
+
 export function getRecentApplications(limit = 5) {
   return db.application.findMany({
     orderBy: { createdAt: "desc" },

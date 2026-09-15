@@ -118,6 +118,36 @@ export async function updateApplicationStatus(id: string, status: string) {
   revalidatePath("/");
 }
 
+// Copies everything about an application except its documents and activity
+// timeline (those are specific to that particular application, not the role).
+// Status resets to INTERESTED since the duplicate hasn't been worked yet.
+export async function duplicateApplication(id: string) {
+  const original = await db.application.findUniqueOrThrow({ where: { id } });
+
+  const copy = await db.application.create({
+    data: {
+      title: original.title,
+      location: original.location,
+      jobUrl: original.jobUrl,
+      description: original.description,
+      source: original.source,
+      salary: original.salary,
+      deadline: original.deadline,
+      priority: original.priority,
+      notes: original.notes,
+      employerId: original.employerId,
+      status: "INTERESTED",
+    },
+  });
+
+  revalidatePath("/applications");
+  revalidatePath("/pipeline");
+  revalidatePath("/deadlines");
+  revalidatePath("/");
+
+  return copy.id;
+}
+
 export async function deleteApplication(id: string) {
   await db.application.delete({ where: { id } });
   revalidatePath("/applications");

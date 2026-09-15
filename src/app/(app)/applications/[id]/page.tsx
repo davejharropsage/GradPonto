@@ -9,6 +9,7 @@ import { ActivityLog } from "@/components/activities/activity-log";
 import { DocumentsPanel } from "@/components/documents/documents-panel";
 import { DeleteButton } from "@/components/shared/delete-button";
 import { DeadlineBadge } from "@/components/applications/deadline-badge";
+import { DuplicateButton } from "@/components/applications/duplicate-button";
 import { CopyButton } from "@/components/shared/copy-button";
 import { PrintButton } from "@/components/shared/print-button";
 import { getApplication } from "@/lib/data/applications";
@@ -44,6 +45,7 @@ export default async function ApplicationDetailPage({
               <Pencil className="h-4 w-4" />
               Edit
             </LinkButton>
+            <DuplicateButton applicationId={application.id} variant="button" />
             <DeleteButton
               action={deleteApplication.bind(null, application.id)}
               label="Delete Application"

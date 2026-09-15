@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DeadlineBadge } from "./deadline-badge";
 import { StatusQuickSelect } from "./status-quick-select";
+import { DuplicateButton } from "./duplicate-button";
 import { InlineDeleteButton } from "@/components/shared/inline-delete-button";
 import { deleteApplication } from "@/lib/actions/applications";
 import { priorityLabels, priorityColors } from "@/lib/labels";
@@ -43,6 +44,7 @@ export function ApplicationCard({
           <Link href={`/applications/${application.id}/edit`} className="rounded p-1 hover:bg-accent hover:text-foreground">
             <Pencil className="h-3.5 w-3.5" />
           </Link>
+          <DuplicateButton applicationId={application.id} />
           <InlineDeleteButton action={deleteApplication.bind(null, application.id)} label="Delete this application" />
         </div>
       </div>

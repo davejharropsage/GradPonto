@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { Check, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/shared/link-button";
@@ -154,6 +155,17 @@ export function PricingSignup() {
               <Button type="submit" disabled={pending} className="mt-1">
                 {pending ? "Signing up..." : selectedPlan === "PRO" ? "Start Pro" : "Start free"}
               </Button>
+              <p className="text-xs text-muted-foreground">
+                By signing up you agree to the{" "}
+                <Link href="/terms" className="underline hover:text-foreground">
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="underline hover:text-foreground">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
             </form>
           </>
         )}

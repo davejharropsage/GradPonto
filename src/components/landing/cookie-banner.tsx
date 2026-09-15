@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "cookie-consent";
@@ -33,7 +34,11 @@ export function CookieBanner() {
       <div className="mx-auto flex max-w-4xl flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           This site uses local storage to remember your theme preference and, if you follow a marketing link, which
-          campaign brought you here. No third-party trackers or advertising cookies are used.
+          campaign brought you here. No third-party trackers or advertising cookies are used. See our{" "}
+          <Link href="/privacy" className="underline hover:text-foreground">
+            Privacy Policy
+          </Link>
+          .
         </p>
         <div className="flex shrink-0 gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => respond("declined")}>

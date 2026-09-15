@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { bulkDeleteApplications, bulkUpdateApplicationStatus } from "@/lib/actions/applications";
 import { applicationStatusLabels } from "@/lib/labels";
+import { deleteWithUndo } from "@/lib/undo-delete";
 
 export function BulkActionsBar({ selectedIds, onClear }: { selectedIds: string[]; onClear: () => void }) {
   const [pending, startTransition] = useTransition();
@@ -40,16 +41,14 @@ export function BulkActionsBar({ selectedIds, onClear }: { selectedIds: string[]
   }
 
   function handleDelete() {
-    startTransition(async () => {
-      try {
-        await bulkDeleteApplications(selectedIds);
-        toast.success(`Deleted ${selectedIds.length} application${selectedIds.length === 1 ? "" : "s"}`);
-        setDeleteOpen(false);
-        onClear();
-        router.refresh();
-      } catch {
-        toast.error("Failed to delete applications");
-      }
+    const ids = selectedIds;
+    const count = ids.length;
+    setDeleteOpen(false);
+    onClear();
+    deleteWithUndo({
+      action: () => bulkDeleteApplications(ids),
+      message: `${count} application${count === 1 ? "" : "s"} deleted`,
+      onSettled: () => router.refresh(),
     });
   }
 
@@ -84,14 +83,14 @@ export function BulkActionsBar({ selectedIds, onClear }: { selectedIds: string[]
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete {selectedIds.length} application{selectedIds.length === 1 ? "" : "s"}?</DialogTitle>
-            <DialogDescription>This action cannot be undone.</DialogDescription>
+            <DialogDescription>You&apos;ll have a few seconds to undo this before it&apos;s gone for good.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" disabled={pending} onClick={handleDelete}>
-              {pending ? "Deleting..." : "Delete"}
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

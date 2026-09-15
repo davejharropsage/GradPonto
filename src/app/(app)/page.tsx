@@ -4,11 +4,13 @@ import { GreetingBanner } from "@/components/dashboard/greeting-banner";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { NeedsAttentionTable } from "@/components/dashboard/needs-attention-table";
 import { ProgressBar } from "@/components/dashboard/progress-bar";
+import { StaleApplicationsCard } from "@/components/dashboard/stale-applications-card";
 import {
   getDashboardStats,
   getProgressBuckets,
   getNeedsAttention,
   getUpcomingDeadlines,
+  getStaleApplications,
 } from "@/lib/data/dashboard";
 import { getProfile, getGreeting } from "@/lib/data/profile";
 import { db } from "@/lib/db";
@@ -19,14 +21,16 @@ export default async function DashboardPage() {
   startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
 
-  const [stats, buckets, needsAttention, upcomingDeadlines, profile, applicationsThisWeek] = await Promise.all([
-    getDashboardStats(),
-    getProgressBuckets(),
-    getNeedsAttention(),
-    getUpcomingDeadlines(4),
-    getProfile(),
-    db.application.count({ where: { createdAt: { gte: startOfWeek } } }),
-  ]);
+  const [stats, buckets, needsAttention, upcomingDeadlines, staleApplications, profile, applicationsThisWeek] =
+    await Promise.all([
+      getDashboardStats(),
+      getProgressBuckets(),
+      getNeedsAttention(),
+      getUpcomingDeadlines(4),
+      getStaleApplications(),
+      getProfile(),
+      db.application.count({ where: { createdAt: { gte: startOfWeek } } }),
+    ]);
 
   const statCards = [
     { label: "Applications", value: stats.applications },
@@ -43,6 +47,8 @@ export default async function DashboardPage() {
       <StatCards stats={statCards} />
 
       <NeedsAttentionTable rows={needsAttention} />
+
+      <StaleApplicationsCard applications={staleApplications} />
 
       <ProgressBar buckets={buckets} />
 

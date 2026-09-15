@@ -29,6 +29,23 @@ export async function createActivity(formData: FormData) {
   revalidatePath(`/applications/${parsed.applicationId}`);
 }
 
+export async function updateActivity(id: string, formData: FormData) {
+  const parsed = activitySchema.parse(Object.fromEntries(formData));
+
+  const activity = await db.activity.update({
+    where: { id },
+    data: {
+      type: parsed.type,
+      subject: parsed.subject,
+      notes: toNullable(parsed.notes),
+      dueDate: toDate(parsed.dueDate),
+    },
+  });
+
+  revalidatePath("/");
+  if (activity.applicationId) revalidatePath(`/applications/${activity.applicationId}`);
+}
+
 export async function toggleActivityComplete(id: string, completed: boolean) {
   const activity = await db.activity.update({
     where: { id },
