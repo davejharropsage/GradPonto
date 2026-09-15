@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { SidebarNav } from "./sidebar-nav";
 import { HeaderSearch } from "./header-search";
 import { ThemeToggle } from "./theme-toggle";
+import { CommandPalette } from "@/components/shared/command-palette";
 
 function Brand() {
   return (
@@ -28,7 +29,8 @@ export function AppShell({ children, proCard }: { children: React.ReactNode; pro
 
   return (
     <div className="flex min-h-screen w-full">
-      <aside className="dark sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
+      <CommandPalette />
+      <aside className="dark sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex print:hidden">
         <div className="flex h-16 items-center border-b border-sidebar-border px-4">
           <Brand />
         </div>
@@ -51,7 +53,7 @@ export function AppShell({ children, proCard }: { children: React.ReactNode; pro
       </aside>
 
       <div className="flex min-h-screen flex-1 flex-col">
-        <header className="flex h-16 items-center gap-3 border-b px-4">
+        <header className="flex h-16 items-center gap-3 border-b px-4 print:hidden">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger
               render={
@@ -81,7 +83,7 @@ export function AppShell({ children, proCard }: { children: React.ReactNode; pro
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main id="main-content" className="flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

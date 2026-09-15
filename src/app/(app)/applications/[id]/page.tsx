@@ -9,6 +9,8 @@ import { ActivityLog } from "@/components/activities/activity-log";
 import { DocumentsPanel } from "@/components/documents/documents-panel";
 import { DeleteButton } from "@/components/shared/delete-button";
 import { DeadlineBadge } from "@/components/applications/deadline-badge";
+import { CopyButton } from "@/components/shared/copy-button";
+import { PrintButton } from "@/components/shared/print-button";
 import { getApplication } from "@/lib/data/applications";
 import { getBaseDocuments } from "@/lib/data/documents";
 import { deleteApplication } from "@/lib/actions/applications";
@@ -33,6 +35,7 @@ export default async function ApplicationDetailPage({
         description={application.employer?.name}
         actions={
           <>
+            <PrintButton />
             <LinkButton href={`/check-cv?applicationId=${application.id}`} variant="outline">
               <FileCheck2 className="h-4 w-4" />
               Check My CV
@@ -81,10 +84,11 @@ export default async function ApplicationDetailPage({
               )}
               {application.jobUrl && (
                 <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <a href={application.jobUrl} target="_blank" rel="noreferrer" className="truncate hover:underline">
                     {application.jobUrl}
                   </a>
+                  <CopyButton value={application.jobUrl} label="" className="ml-auto shrink-0 px-2" />
                 </div>
               )}
               {application.salary && (

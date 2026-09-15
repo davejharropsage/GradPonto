@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Rocket } from "lucide-react";
 import { LinkButton } from "@/components/shared/link-button";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { LandingMobileMenu } from "./landing-mobile-menu";
 
 export function LandingNav() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur print:hidden">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/landing" className="flex items-center gap-2 font-extrabold tracking-tight">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
@@ -18,12 +20,14 @@ export function LandingNav() {
           <a href="#pricing" className="hover:text-foreground">Pricing</a>
         </nav>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <LinkButton href="/" variant="ghost" size="sm" className="hidden sm:inline-flex">
             Open app
           </LinkButton>
-          <LinkButton href="#signup" size="sm" className="bg-foreground text-background hover:bg-foreground/85">
+          <LinkButton href="#signup" size="sm" className="hidden bg-foreground text-background hover:bg-foreground/85 sm:inline-flex">
             Sign up
           </LinkButton>
+          <LandingMobileMenu />
         </div>
       </div>
     </header>

@@ -62,11 +62,14 @@ model Profile {
 // billing (no Stripe keys) — see ARCHITECTURE.md for what a real
 // subscription flow would need.
 model Signup {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  plan      Plan     @default(FREE)
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  plan       Plan     @default(FREE)
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  createdAt  DateTime @default(now())
 }
 
 model Employer {

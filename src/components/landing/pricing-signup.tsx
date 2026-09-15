@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Check, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/shared/link-button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { createSignup } from "@/lib/actions/signup";
+import { UTM_STORAGE_KEY } from "./utm-capture";
 
 const plans = [
   {
@@ -44,6 +45,17 @@ export function PricingSignup() {
   const [submitted, setSubmitted] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [utm, setUtm] = useState<{ utm_source?: string; utm_medium?: string; utm_campaign?: string }>({});
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(UTM_STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reading localStorage is only possible client-side, after mount
+      if (stored) setUtm(JSON.parse(stored));
+    } catch {
+      // Ignore — attribution is best-effort only.
+    }
+  }, []);
 
   return (
     <section id="pricing" className="bg-muted py-20 sm:py-24">
@@ -127,6 +139,9 @@ export function PricingSignup() {
               }}
             >
               <input type="hidden" name="plan" value={selectedPlan} />
+              <input type="hidden" name="utmSource" value={utm.utm_source ?? ""} />
+              <input type="hidden" name="utmMedium" value={utm.utm_medium ?? ""} />
+              <input type="hidden" name="utmCampaign" value={utm.utm_campaign ?? ""} />
               <div className="grid gap-1.5">
                 <Label htmlFor="signup-name">Name</Label>
                 <Input id="signup-name" name="name" required placeholder="Jordan Smith" />

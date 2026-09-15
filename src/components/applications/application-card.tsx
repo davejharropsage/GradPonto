@@ -12,7 +12,7 @@ type ApplicationWithEmployer = Application & { employer: Employer | null };
 
 export function ApplicationCard({ application }: { application: ApplicationWithEmployer }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 transition-colors hover:border-foreground/20">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2">
           <Checkbox className="mt-1" aria-label={`Select ${application.employer?.name ?? application.title}`} />

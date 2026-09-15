@@ -3,6 +3,8 @@ import { Figtree, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { SkipToContent } from "@/components/shared/skip-to-content";
+import { ScrollToTopButton } from "@/components/shared/scroll-to-top-button";
 
 const figtree = Figtree({
   variable: "--font-figtree",
@@ -31,7 +33,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
+          <SkipToContent />
           {children}
+          <ScrollToTopButton />
           <Toaster />
         </ThemeProvider>
       </body>
