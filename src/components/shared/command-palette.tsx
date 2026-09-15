@@ -112,9 +112,12 @@ export function CommandPalette() {
                     onSelect={() => go(`/applications/${app.id}`)}
                   >
                     <Briefcase className="h-4 w-4" />
-                    {app.employerName
-                      ? `${app.employerName}: ${app.title}`
-                      : app.title}
+                    <span className="flex-1 truncate">
+                      {app.employerName ? `${app.employerName}: ${app.title}` : app.title}
+                    </span>
+                    {app.archived && (
+                      <span className="shrink-0 text-xs text-muted-foreground">Archived</span>
+                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>

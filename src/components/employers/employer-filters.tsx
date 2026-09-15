@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 
@@ -9,6 +9,9 @@ export function EmployerFilters({ q }: { q?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Controlled (not defaultValue) so typing doesn't fight the value the
+  // server re-sends via `q` once the debounced URL update round-trips.
+  const [query, setQuery] = useState(q ?? "");
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -27,9 +30,12 @@ export function EmployerFilters({ q }: { q?: string }) {
     <div className="mb-4">
       <Input
         placeholder="Search employers..."
-        defaultValue={q}
+        value={query}
         className="sm:max-w-xs"
-        onChange={(e) => updateParamDebounced("q", e.target.value)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          updateParamDebounced("q", e.target.value);
+        }}
       />
     </div>
   );

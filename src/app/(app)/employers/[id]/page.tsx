@@ -87,9 +87,16 @@ export default async function EmployerDetailPage({
                       <Link href={`/applications/${application.id}`} className="text-sm font-medium hover:underline">
                         {application.title}
                       </Link>
-                      <Badge variant={applicationStatusVariants[application.status]}>
-                        {applicationStatusLabels[application.status]}
-                      </Badge>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {application.archived && (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            Archived
+                          </Badge>
+                        )}
+                        <Badge variant={applicationStatusVariants[application.status]}>
+                          {applicationStatusLabels[application.status]}
+                        </Badge>
+                      </div>
                     </li>
                   ))}
                 </ul>

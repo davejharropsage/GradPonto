@@ -6,11 +6,11 @@ export async function getDashboardStats() {
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   const [applications, assessments, interviews, offers, deadlinesSoon] = await Promise.all([
-    db.application.count(),
-    db.application.count({ where: { status: "ONLINE_ASSESSMENT" } }),
-    db.application.count({ where: { status: "VIDEO_INTERVIEW" } }),
-    db.application.count({ where: { status: "OFFER" } }),
-    db.application.count({ where: { deadline: { gte: now, lte: in7Days } } }),
+    db.application.count({ where: { archived: false } }),
+    db.application.count({ where: { status: "ONLINE_ASSESSMENT", archived: false } }),
+    db.application.count({ where: { status: "VIDEO_INTERVIEW", archived: false } }),
+    db.application.count({ where: { status: "OFFER", archived: false } }),
+    db.application.count({ where: { deadline: { gte: now, lte: in7Days }, archived: false } }),
   ]);
 
   return { applications, assessments, interviews, offers, deadlinesSoon };
@@ -18,7 +18,11 @@ export async function getDashboardStats() {
 
 // The 5-bucket "Your Application Progress" rollup shown on the dashboard.
 export async function getProgressBuckets() {
-  const byStatus = await db.application.groupBy({ by: ["status"], _count: { _all: true } });
+  const byStatus = await db.application.groupBy({
+    by: ["status"],
+    where: { archived: false },
+    _count: { _all: true },
+  });
   const counts = Object.fromEntries(byStatus.map((row) => [row.status, row._count._all]));
 
   return [
@@ -38,7 +42,7 @@ export async function getProgressBuckets() {
 // Applications that need action from the user, ranked by priority then deadline.
 export async function getNeedsAttention(limit = 4) {
   const applications = await db.application.findMany({
-    where: { status: { in: Object.keys(nextActionLabels) as never[] } },
+    where: { status: { in: Object.keys(nextActionLabels) as never[] }, archived: false },
     include: { employer: true },
     orderBy: [{ priority: "desc" }, { deadline: "asc" }],
     take: limit,
@@ -63,6 +67,7 @@ export function getUpcomingDeadlines(limit = 8) {
     where: {
       deadline: { gte: new Date() },
       status: { notIn: ["REJECTED", "WITHDRAWN", "OFFER"] },
+      archived: false,
     },
     orderBy: { deadline: "asc" },
     take: limit,
@@ -79,6 +84,7 @@ export function getStaleApplications(limit = 6, staleAfterDays = 14) {
     where: {
       status: { in: ["INTERESTED", "PREPARING"] },
       updatedAt: { lt: cutoff },
+      archived: false,
     },
     include: { employer: true },
     orderBy: { updatedAt: "asc" },
@@ -96,6 +102,7 @@ export function getUpcomingReminders(limit = 6, withinDays = 7) {
       type: { not: "STATUS_CHANGE" },
       completedAt: null,
       dueDate: { lte: cutoff },
+      OR: [{ applicationId: null }, { application: { archived: false } }],
     },
     include: { application: { include: { employer: true } } },
     orderBy: { dueDate: "asc" },
@@ -105,6 +112,7 @@ export function getUpcomingReminders(limit = 6, withinDays = 7) {
 
 export function getRecentApplications(limit = 5) {
   return db.application.findMany({
+    where: { archived: false },
     orderBy: { createdAt: "desc" },
     take: limit,
     include: { employer: true },

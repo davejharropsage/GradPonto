@@ -101,6 +101,10 @@ model Application {
   appliedAt   DateTime?
   notes       String?
 
+  // Independent of status: hides the application from the default active
+  // view without deleting it or implying it was rejected/withdrawn.
+  archived Boolean @default(false)
+
   employer   Employer? @relation(fields: [employerId], references: [id])
   employerId String?
 
@@ -113,6 +117,7 @@ model Application {
   @@index([employerId])
   @@index([status])
   @@index([deadline])
+  @@index([archived])
 }
 
 model Document {

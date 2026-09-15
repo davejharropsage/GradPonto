@@ -148,6 +148,35 @@ export async function duplicateApplication(id: string) {
   return copy.id;
 }
 
+// Hides the application from the default active view without touching its
+// status or deleting anything — reversible via unarchiveApplication.
+export async function archiveApplication(id: string) {
+  await db.application.update({ where: { id }, data: { archived: true } });
+  revalidatePath("/applications");
+  revalidatePath(`/applications/${id}`);
+  revalidatePath("/pipeline");
+  revalidatePath("/deadlines");
+  revalidatePath("/");
+}
+
+export async function unarchiveApplication(id: string) {
+  await db.application.update({ where: { id }, data: { archived: false } });
+  revalidatePath("/applications");
+  revalidatePath(`/applications/${id}`);
+  revalidatePath("/pipeline");
+  revalidatePath("/deadlines");
+  revalidatePath("/");
+}
+
+export async function bulkArchiveApplications(ids: string[]) {
+  if (ids.length === 0) return;
+  await db.application.updateMany({ where: { id: { in: ids } }, data: { archived: true } });
+  revalidatePath("/applications");
+  revalidatePath("/pipeline");
+  revalidatePath("/deadlines");
+  revalidatePath("/");
+}
+
 export async function deleteApplication(id: string) {
   await db.application.delete({ where: { id } });
   revalidatePath("/applications");

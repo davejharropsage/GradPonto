@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, X } from "lucide-react";
+import { Archive, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { bulkDeleteApplications, bulkUpdateApplicationStatus } from "@/lib/actions/applications";
+import { bulkArchiveApplications, bulkDeleteApplications, bulkUpdateApplicationStatus } from "@/lib/actions/applications";
 import { applicationStatusLabels } from "@/lib/labels";
 import { deleteWithUndo } from "@/lib/undo-delete";
 
@@ -36,6 +36,21 @@ export function BulkActionsBar({ selectedIds, onClear }: { selectedIds: string[]
         router.refresh();
       } catch {
         toast.error("Failed to update applications");
+      }
+    });
+  }
+
+  function handleArchive() {
+    const ids = selectedIds;
+    const count = ids.length;
+    startTransition(async () => {
+      try {
+        await bulkArchiveApplications(ids);
+        toast.success(`Archived ${count} application${count === 1 ? "" : "s"}`);
+        onClear();
+        router.refresh();
+      } catch {
+        toast.error("Failed to archive applications");
       }
     });
   }
@@ -70,6 +85,11 @@ export function BulkActionsBar({ selectedIds, onClear }: { selectedIds: string[]
           ))}
         </SelectContent>
       </Select>
+
+      <Button type="button" variant="outline" size="sm" disabled={pending} onClick={handleArchive}>
+        <Archive className="h-3.5 w-3.5" />
+        Archive
+      </Button>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogTrigger

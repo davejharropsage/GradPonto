@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Archive } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,9 @@ export function ApplicationFilters({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Controlled (not defaultValue) so typing doesn't fight the value the
+  // server re-sends via `q` once the debounced URL update round-trips.
+  const [query, setQuery] = useState(q ?? "");
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -47,9 +50,12 @@ export function ApplicationFilters({
     <div className="mb-4 flex flex-col gap-2 sm:flex-row">
       <Input
         placeholder="Search applications..."
-        defaultValue={q}
+        value={query}
         className="sm:max-w-xs"
-        onChange={(e) => updateParamDebounced("q", e.target.value)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          updateParamDebounced("q", e.target.value);
+        }}
       />
       <Select value={status || "ALL"} onValueChange={(v) => updateParam("status", v === "ALL" || !v ? "" : v)}>
         <SelectTrigger className="sm:w-48">

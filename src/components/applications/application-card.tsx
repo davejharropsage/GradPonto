@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DeadlineBadge } from "./deadline-badge";
 import { StatusQuickSelect } from "./status-quick-select";
 import { DuplicateButton } from "./duplicate-button";
+import { ArchiveButton } from "./archive-button";
 import { InlineDeleteButton } from "@/components/shared/inline-delete-button";
 import { deleteApplication } from "@/lib/actions/applications";
 import { priorityLabels, priorityColors } from "@/lib/labels";
@@ -45,6 +46,7 @@ export function ApplicationCard({
             <Pencil className="h-3.5 w-3.5" />
           </Link>
           <DuplicateButton applicationId={application.id} />
+          <ArchiveButton applicationId={application.id} archived={application.archived} />
           <InlineDeleteButton action={deleteApplication.bind(null, application.id)} label="Delete this application" />
         </div>
       </div>
@@ -54,6 +56,11 @@ export function ApplicationCard({
         <Badge className={priorityColors[application.priority]} variant="outline">
           {priorityLabels[application.priority]}
         </Badge>
+        {application.archived && (
+          <Badge variant="outline" className="text-muted-foreground">
+            Archived
+          </Badge>
+        )}
       </div>
 
       <div className="space-y-1.5 text-sm text-muted-foreground">

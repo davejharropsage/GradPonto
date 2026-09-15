@@ -47,19 +47,27 @@ export default async function ApplicationsPage({
       {applications.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title={params.q || params.status ? "No applications match your filters" : "No applications yet"}
+          title={
+            params.q || params.status
+              ? "No applications match your filters"
+              : archivedCount > 0
+                ? "All your applications are archived"
+                : "No applications yet"
+          }
           description={
             params.q || params.status
               ? "Try adjusting your search or filters."
-              : "Add your first placement opportunity to get started."
+              : archivedCount > 0
+                ? `Show archived to see the ${archivedCount} application${archivedCount === 1 ? "" : "s"} you've put away.`
+                : "Add your first placement opportunity to get started."
           }
           action={
-            !params.q && !params.status && (
+            !params.q && !params.status && archivedCount === 0 ? (
               <LinkButton href="/applications/new">
                 <Plus className="h-4 w-4" />
                 New Application
               </LinkButton>
-            )
+            ) : undefined
           }
         />
       ) : (

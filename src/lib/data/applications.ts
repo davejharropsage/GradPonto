@@ -3,11 +3,6 @@ import { applicationStatuses } from "@/lib/labels";
 
 const PAGE_SIZE = 20;
 
-// Statuses hidden from the default applications list once an application has
-// closed out, so the active pipeline doesn't stay cluttered with old
-// rejections. They're never deleted, just filtered out unless requested.
-const archivedStatuses = ["REJECTED", "WITHDRAWN"] as const;
-
 export async function getApplications(params: {
   q?: string;
   status?: string;
@@ -15,6 +10,11 @@ export async function getApplications(params: {
   page?: number;
 }) {
   const page = params.page && params.page > 0 ? params.page : 1;
+
+  // A search should be able to find an archived application too — "archived"
+  // means hidden from the default browse view, not unsearchable. Only the
+  // unfiltered default listing hides archived applications.
+  const includeArchived = params.archived || Boolean(params.q?.trim());
 
   const where = {
     AND: [
@@ -27,11 +27,8 @@ export async function getApplications(params: {
             ],
           }
         : {},
-      params.status
-        ? { status: params.status as never }
-        : params.archived
-          ? {}
-          : { status: { notIn: [...archivedStatuses] } },
+      params.status ? { status: params.status as never } : {},
+      includeArchived ? {} : { archived: false },
     ],
   };
 
@@ -44,7 +41,7 @@ export async function getApplications(params: {
       take: PAGE_SIZE,
     }),
     db.application.count({ where }),
-    db.application.count({ where: { status: { in: [...archivedStatuses] } } }),
+    db.application.count({ where: { archived: true } }),
   ]);
 
   return {
@@ -70,13 +67,11 @@ export function getApplication(id: string) {
 
 // Lightweight summary of every non-archived application, used to warn (not
 // block) about a likely duplicate when creating or editing an application
-// for a company that already has one on record. Uses the same "archived"
-// definition as the applications list, not just the open-pipeline statuses,
-// since an existing offer at that company is still worth flagging.
+// for a company that already has one on record.
 export async function getActiveApplicationSummaries(excludeId?: string) {
   const applications = await db.application.findMany({
     where: {
-      status: { notIn: [...archivedStatuses] },
+      archived: false,
       id: excludeId ? { not: excludeId } : undefined,
     },
     select: { id: true, title: true, status: true, employer: { select: { name: true } } },
@@ -92,14 +87,18 @@ export async function getActiveApplicationSummaries(excludeId?: string) {
 
 export function getApplicationOptions() {
   return db.application.findMany({
+    where: { archived: false },
     select: { id: true, title: true, employer: { select: { name: true } } },
     orderBy: { updatedAt: "desc" },
   });
 }
 
-// All applications grouped by status, for the Pipeline kanban board.
+// All applications grouped by status, for the Pipeline kanban board. Archived
+// applications don't belong on an active board, even if their status would
+// otherwise place them in a column.
 export async function getApplicationsByStatus() {
   const applications = await db.application.findMany({
+    where: { archived: false },
     include: { employer: true },
     orderBy: { updatedAt: "desc" },
   });
@@ -120,6 +119,7 @@ export async function getDeadlinesGrouped() {
     where: {
       deadline: { not: null },
       status: { notIn: ["REJECTED", "WITHDRAWN", "OFFER"] },
+      archived: false,
     },
     include: { employer: true },
     orderBy: { deadline: "asc" },
