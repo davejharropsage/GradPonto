@@ -1,4 +1,4 @@
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, Download } from "lucide-react";
 import { LinkButton } from "@/components/shared/link-button";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -27,10 +27,16 @@ export default async function ApplicationsPage({
         title="Applications"
         description={`${total} application${total === 1 ? "" : "s"}`}
         actions={
-          <LinkButton href="/applications/new">
-            <Plus className="h-4 w-4" />
-            New Application
-          </LinkButton>
+          <>
+            <LinkButton href="/api/applications/export" variant="outline">
+              <Download className="h-4 w-4" />
+              Export CSV
+            </LinkButton>
+            <LinkButton href="/applications/new">
+              <Plus className="h-4 w-4" />
+              New Application
+            </LinkButton>
+          </>
         }
       />
 
