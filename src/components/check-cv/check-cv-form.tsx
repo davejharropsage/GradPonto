@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Sparkles, FileText } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { Sparkles, FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { matchCv } from "@/lib/actions/analyze";
+import { extractCvText } from "@/lib/actions/extract-cv";
 import type { CvMatch } from "@/lib/ai/match-cv";
 import type { Document, Application, Employer } from "@/generated/prisma/client";
 
@@ -33,11 +34,35 @@ export function CheckCvForm({
 }) {
   const [cvId, setCvId] = useState(cvDocuments[0]?.id ?? "");
   const [pastedCv, setPastedCv] = useState("");
+  const [uploadedFilename, setUploadedFilename] = useState<string | null>(null);
   const [applicationId, setApplicationId] = useState(initialApplicationId ?? "");
   const [result, setResult] = useState<CvMatch | null>(null);
   const [pending, startTransition] = useTransition();
+  const [uploading, startUpload] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const cvContent = cvId ? cvDocuments.find((d) => d.id === cvId)?.content ?? "" : pastedCv;
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    startUpload(async () => {
+      try {
+        const formData = new FormData();
+        formData.set("file", file);
+        const { text, filename } = await extractCvText(formData);
+        setCvId("");
+        setPastedCv(text);
+        setUploadedFilename(filename);
+        toast.success(`Loaded ${filename}`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Couldn't read that file");
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    });
+  }
 
   function handleAnalyse() {
     if (!cvContent.trim() || !applicationId) return;
@@ -63,7 +88,7 @@ export function CheckCvForm({
                   <SelectValue>
                     {(value: string) => {
                       const doc = cvDocuments.find((d) => d.id === value);
-                      if (!doc) return "Paste CV text below";
+                      if (!doc) return "Upload or paste CV text below";
                       return doc.isBase ? "Base CV" : `Tailored for ${doc.application?.title ?? "an application"}`;
                     }}
                   </SelectValue>
@@ -81,12 +106,57 @@ export function CheckCvForm({
             ) : null}
 
             {(cvDocuments.length === 0 || !cvId) && (
-              <Textarea
-                rows={8}
-                value={pastedCv}
-                onChange={(e) => setPastedCv(e.target.value)}
-                placeholder="No saved CV yet — paste your CV text here, or save a base CV on the Documents page first."
-              />
+              <>
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.docx,.txt,.md"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    {uploading ? "Reading file..." : "Upload a file"}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">PDF, DOCX, or TXT — up to 10MB</span>
+                </div>
+
+                {uploadedFilename && (
+                  <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-1.5 text-sm">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <FileText className="h-3.5 w-3.5 shrink-0" />
+                      {uploadedFilename}
+                    </span>
+                    <button
+                      type="button"
+                      className="shrink-0 text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setUploadedFilename(null);
+                        setPastedCv("");
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                <Textarea
+                  rows={8}
+                  value={pastedCv}
+                  onChange={(e) => {
+                    setPastedCv(e.target.value);
+                    setUploadedFilename(null);
+                  }}
+                  placeholder="Upload a file above, or paste your CV text here directly."
+                />
+              </>
             )}
             {cvDocuments.length > 0 && (
               <button
@@ -94,7 +164,7 @@ export function CheckCvForm({
                 className="w-fit text-xs text-muted-foreground underline-offset-2 hover:underline"
                 onClick={() => setCvId("")}
               >
-                {cvId ? "Or paste CV text instead" : "Use a saved CV instead"}
+                {cvId ? "Or upload / paste CV text instead" : "Use a saved CV instead"}
               </button>
             )}
           </div>
