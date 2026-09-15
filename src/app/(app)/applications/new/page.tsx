@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ApplicationForm } from "@/components/applications/application-form";
 import { createApplication } from "@/lib/actions/applications";
 import { getEmployerOptions } from "@/lib/data/employers";
+import { getActiveApplicationSummaries } from "@/lib/data/applications";
 import { isAiConfigured } from "@/lib/ai/client";
 
 export default async function NewApplicationPage({
@@ -9,7 +10,11 @@ export default async function NewApplicationPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const [employers, params] = await Promise.all([getEmployerOptions(), searchParams]);
+  const [employers, existingApplications, params] = await Promise.all([
+    getEmployerOptions(),
+    getActiveApplicationSummaries(),
+    searchParams,
+  ]);
 
   const initial = {
     title: params.title,
@@ -28,6 +33,7 @@ export default async function NewApplicationPage({
       <ApplicationForm
         action={createApplication}
         employers={employers}
+        existingApplications={existingApplications}
         initial={hasInitial ? initial : undefined}
         aiAvailable={isAiConfigured()}
       />

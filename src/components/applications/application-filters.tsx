@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef } from "react";
+import { Archive } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -12,7 +14,17 @@ import {
 } from "@/components/ui/select";
 import { applicationStatusLabels } from "@/lib/labels";
 
-export function ApplicationFilters({ q, status }: { q?: string; status?: string }) {
+export function ApplicationFilters({
+  q,
+  status,
+  archived,
+  archivedCount,
+}: {
+  q?: string;
+  status?: string;
+  archived: boolean;
+  archivedCount: number;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -54,6 +66,16 @@ export function ApplicationFilters({ q, status }: { q?: string; status?: string 
           ))}
         </SelectContent>
       </Select>
+      {archivedCount > 0 && (
+        <Button
+          type="button"
+          variant={archived ? "secondary" : "outline"}
+          onClick={() => updateParam("archived", archived ? "" : "1")}
+        >
+          <Archive className="h-4 w-4" />
+          {archived ? "Hide archived" : `Show archived (${archivedCount})`}
+        </Button>
+      )}
     </div>
   );
 }

@@ -86,6 +86,23 @@ export function getStaleApplications(limit = 6, staleAfterDays = 14) {
   });
 }
 
+// Open interview/task/follow-up items due soon (or already overdue) that
+// aren't surfaced anywhere outside an application's own timeline.
+export function getUpcomingReminders(limit = 6, withinDays = 7) {
+  const cutoff = new Date(Date.now() + withinDays * 24 * 60 * 60 * 1000);
+
+  return db.activity.findMany({
+    where: {
+      type: { not: "STATUS_CHANGE" },
+      completedAt: null,
+      dueDate: { lte: cutoff },
+    },
+    include: { application: { include: { employer: true } } },
+    orderBy: { dueDate: "asc" },
+    take: limit,
+  });
+}
+
 export function getRecentApplications(limit = 5) {
   return db.application.findMany({
     orderBy: { createdAt: "desc" },

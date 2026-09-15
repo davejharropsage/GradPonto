@@ -3,9 +3,15 @@ import { applicationStatuses } from "@/lib/labels";
 
 const PAGE_SIZE = 20;
 
+// Statuses hidden from the default applications list once an application has
+// closed out, so the active pipeline doesn't stay cluttered with old
+// rejections. They're never deleted, just filtered out unless requested.
+const archivedStatuses = ["REJECTED", "WITHDRAWN"] as const;
+
 export async function getApplications(params: {
   q?: string;
   status?: string;
+  archived?: boolean;
   page?: number;
 }) {
   const page = params.page && params.page > 0 ? params.page : 1;
@@ -21,11 +27,15 @@ export async function getApplications(params: {
             ],
           }
         : {},
-      params.status ? { status: params.status as never } : {},
+      params.status
+        ? { status: params.status as never }
+        : params.archived
+          ? {}
+          : { status: { notIn: [...archivedStatuses] } },
     ],
   };
 
-  const [applications, total] = await Promise.all([
+  const [applications, total, archivedCount] = await Promise.all([
     db.application.findMany({
       where,
       include: { employer: true },
@@ -34,6 +44,7 @@ export async function getApplications(params: {
       take: PAGE_SIZE,
     }),
     db.application.count({ where }),
+    db.application.count({ where: { status: { in: [...archivedStatuses] } } }),
   ]);
 
   return {
@@ -42,6 +53,7 @@ export async function getApplications(params: {
     page,
     pageSize: PAGE_SIZE,
     totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    archivedCount,
   };
 }
 
@@ -54,6 +66,28 @@ export function getApplication(id: string) {
       activities: { orderBy: { createdAt: "desc" } },
     },
   });
+}
+
+// Lightweight summary of every non-archived application, used to warn (not
+// block) about a likely duplicate when creating or editing an application
+// for a company that already has one on record. Uses the same "archived"
+// definition as the applications list, not just the open-pipeline statuses,
+// since an existing offer at that company is still worth flagging.
+export async function getActiveApplicationSummaries(excludeId?: string) {
+  const applications = await db.application.findMany({
+    where: {
+      status: { notIn: [...archivedStatuses] },
+      id: excludeId ? { not: excludeId } : undefined,
+    },
+    select: { id: true, title: true, status: true, employer: { select: { name: true } } },
+  });
+
+  return applications.map((application) => ({
+    id: application.id,
+    title: application.title,
+    status: application.status,
+    employerName: application.employer?.name ?? "",
+  }));
 }
 
 export function getApplicationOptions() {

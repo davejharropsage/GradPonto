@@ -10,14 +10,16 @@ import { getApplications } from "@/lib/data/applications";
 export default async function ApplicationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string; archived?: string }>;
 }) {
   const params = await searchParams;
   const page = params.page ? parseInt(params.page, 10) : 1;
+  const archived = params.archived === "1";
 
-  const { applications, total, totalPages } = await getApplications({
+  const { applications, total, totalPages, archivedCount } = await getApplications({
     q: params.q,
     status: params.status,
+    archived,
     page,
   });
 
@@ -40,7 +42,7 @@ export default async function ApplicationsPage({
         }
       />
 
-      <ApplicationFilters q={params.q} status={params.status} />
+      <ApplicationFilters q={params.q} status={params.status} archived={archived} archivedCount={archivedCount} />
 
       {applications.length === 0 ? (
         <EmptyState
@@ -67,7 +69,7 @@ export default async function ApplicationsPage({
             page={page}
             totalPages={totalPages}
             basePath="/applications"
-            searchParams={{ q: params.q, status: params.status }}
+            searchParams={{ q: params.q, status: params.status, archived: params.archived }}
           />
         </>
       )}

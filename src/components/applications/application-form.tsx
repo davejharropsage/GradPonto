@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Link2, Wand2 } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { Link2, Wand2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,13 @@ import { fetchJobFromUrl, analyzeJob } from "@/lib/actions/analyze";
 import { applicationStatusLabels, priorityLabels } from "@/lib/labels";
 import type { Application, Employer } from "@/generated/prisma/client";
 
+export interface ExistingApplicationSummary {
+  id: string;
+  title: string;
+  status: string;
+  employerName: string;
+}
+
 export interface ApplicationFormInitial {
   title?: string;
   company?: string;
@@ -33,12 +40,14 @@ export function ApplicationForm({
   action,
   application,
   employers,
+  existingApplications = [],
   initial,
   aiAvailable = false,
 }: {
   action: (formData: FormData) => void;
   application?: (Application & { employer: Employer | null }) | null;
   employers: { id: string; name: string }[];
+  existingApplications?: ExistingApplicationSummary[];
   initial?: ApplicationFormInitial;
   aiAvailable?: boolean;
 }) {
@@ -54,6 +63,12 @@ export function ApplicationForm({
   const [deadline, setDeadline] = useState(initialDeadline);
   const [description, setDescription] = useState(application?.description ?? initial?.description ?? "");
   const [autofilling, startAutofill] = useTransition();
+
+  const duplicateMatches = useMemo(() => {
+    const trimmed = company.trim().toLowerCase();
+    if (!trimmed) return [];
+    return existingApplications.filter((existing) => existing.employerName.trim().toLowerCase() === trimmed);
+  }, [company, existingApplications]);
 
   function handleAutofill() {
     if (!jobUrl.trim()) {
@@ -134,6 +149,17 @@ export function ApplicationForm({
           />
         </div>
       </div>
+
+      {duplicateMatches.length > 0 && (
+        <div className="flex gap-2 rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            You already have {duplicateMatches.length === 1 ? "an open application" : `${duplicateMatches.length} open applications`} with{" "}
+            {company.trim()}: {duplicateMatches.map((m) => `${m.title} (${applicationStatusLabels[m.status] ?? m.status})`).join(", ")}.
+            This might be a duplicate, or just another role there, either is fine.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
