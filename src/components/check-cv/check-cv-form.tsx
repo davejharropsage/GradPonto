@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Sparkles, FileText, Upload, X } from "lucide-react";
+import { Sparkles, FileText, Upload, X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/shared/link-button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,7 +46,13 @@ export function CheckCvForm({
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const cvContent = source === "saved" ? cvDocuments.find((d) => d.id === cvId)?.content ?? "" : pastedCv;
+  const selectedDoc = cvDocuments.find((d) => d.id === cvId);
+  const cvContent = source === "saved" ? selectedDoc?.content ?? "" : pastedCv;
+  const editHref = selectedDoc
+    ? selectedDoc.isBase
+      ? "/documents"
+      : `/applications/${selectedDoc.applicationId}/documents/${selectedDoc.id}`
+    : null;
 
   function handleFile(file: File) {
     startUpload(async () => {
@@ -162,36 +169,47 @@ export function CheckCvForm({
                   type="button"
                   className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                   onClick={() => {
+                    // Carry over the currently selected CV's text so switching to "paste"
+                    // reads as editing/copying it, not starting from a blank box.
+                    if (!pastedCv && cvContent) setPastedCv(cvContent);
                     setSource("upload");
                     setUploadedFilename(null);
                   }}
                 >
-                  Or paste CV text
+                  Or paste / edit CV text
                 </button>
               )}
             </div>
 
             {source === "saved" && cvDocuments.length > 0 && (
-              <Select value={cvId} onValueChange={(v) => setCvId(v ?? "")}>
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {(value: string) => {
-                      const doc = cvDocuments.find((d) => d.id === value);
-                      if (!doc) return "Choose a saved CV...";
-                      return doc.isBase ? "Base CV" : `Tailored for ${doc.application?.title ?? "an application"}`;
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {cvDocuments.map((doc) => (
-                    <SelectItem key={doc.id} value={doc.id}>
-                      {doc.isBase
-                        ? "Base CV"
-                        : `Tailored for ${doc.application?.employer?.name ?? "Unknown"} (${doc.application?.title ?? ""})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={cvId} onValueChange={(v) => setCvId(v ?? "")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {(value: string) => {
+                        const doc = cvDocuments.find((d) => d.id === value);
+                        if (!doc) return "Choose a saved CV...";
+                        return doc.isBase ? "Base CV" : `Tailored for ${doc.application?.title ?? "an application"}`;
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cvDocuments.map((doc) => (
+                      <SelectItem key={doc.id} value={doc.id}>
+                        {doc.isBase
+                          ? "Base CV"
+                          : `Tailored for ${doc.application?.employer?.name ?? "Unknown"} (${doc.application?.title ?? ""})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {editHref && (
+                  <LinkButton href={editHref} variant="outline" size="sm" className="shrink-0">
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </LinkButton>
+                )}
+              </div>
             )}
 
             {source === "upload" && !uploadedFilename && (
