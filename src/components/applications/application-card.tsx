@@ -1,21 +1,37 @@
+"use client";
+
 import Link from "next/link";
 import { Pencil, MapPin, PoundSterling, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DeadlineBadge } from "./deadline-badge";
+import { StatusQuickSelect } from "./status-quick-select";
 import { InlineDeleteButton } from "@/components/shared/inline-delete-button";
 import { deleteApplication } from "@/lib/actions/applications";
-import { applicationStatusLabels, applicationStatusColors, priorityLabels, priorityColors } from "@/lib/labels";
+import { priorityLabels, priorityColors } from "@/lib/labels";
 import type { Application, Employer } from "@/generated/prisma/client";
 
 type ApplicationWithEmployer = Application & { employer: Employer | null };
 
-export function ApplicationCard({ application }: { application: ApplicationWithEmployer }) {
+export function ApplicationCard({
+  application,
+  selected = false,
+  onToggleSelect,
+}: {
+  application: ApplicationWithEmployer;
+  selected?: boolean;
+  onToggleSelect?: (id: string, checked: boolean) => void;
+}) {
   return (
     <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 transition-colors hover:border-foreground/20">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2">
-          <Checkbox className="mt-1" aria-label={`Select ${application.employer?.name ?? application.title}`} />
+          <Checkbox
+            className="mt-1"
+            checked={selected}
+            onCheckedChange={(checked) => onToggleSelect?.(application.id, checked)}
+            aria-label={`Select ${application.employer?.name ?? application.title}`}
+          />
           <div>
             <Link href={`/applications/${application.id}`} className="font-semibold hover:underline">
               {application.employer?.name ?? "Unknown company"}
@@ -32,9 +48,7 @@ export function ApplicationCard({ application }: { application: ApplicationWithE
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
-        <Badge className={applicationStatusColors[application.status]} variant="outline">
-          {applicationStatusLabels[application.status]}
-        </Badge>
+        <StatusQuickSelect applicationId={application.id} status={application.status} />
         <Badge className={priorityColors[application.priority]} variant="outline">
           {priorityLabels[application.priority]}
         </Badge>

@@ -125,3 +125,38 @@ export async function deleteApplication(id: string) {
   revalidatePath("/deadlines");
   revalidatePath("/");
 }
+
+export async function bulkDeleteApplications(ids: string[]) {
+  if (ids.length === 0) return;
+  await db.application.deleteMany({ where: { id: { in: ids } } });
+  revalidatePath("/applications");
+  revalidatePath("/pipeline");
+  revalidatePath("/deadlines");
+  revalidatePath("/");
+}
+
+export async function bulkUpdateApplicationStatus(ids: string[], status: string) {
+  if (ids.length === 0) return;
+  const parsedStatus = applicationSchema.shape.status.parse(status);
+  const existing = await db.application.findMany({ where: { id: { in: ids } } });
+
+  await db.application.updateMany({
+    where: { id: { in: ids } },
+    data: { status: parsedStatus },
+  });
+
+  // appliedAt and the status-change log need per-row handling, not updateMany.
+  await Promise.all(
+    existing.map(async (app) => {
+      if (parsedStatus === "APPLIED" && !app.appliedAt) {
+        await db.application.update({ where: { id: app.id }, data: { appliedAt: new Date() } });
+      }
+      await logStatusChange(app.id, app.status, parsedStatus);
+    })
+  );
+
+  revalidatePath("/applications");
+  revalidatePath("/pipeline");
+  revalidatePath("/deadlines");
+  revalidatePath("/");
+}
