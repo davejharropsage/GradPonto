@@ -1,9 +1,12 @@
 "use client";
 
+import { useState, useTransition } from "react";
+import { Link2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -11,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
+import { fetchJobFromUrl, analyzeJob } from "@/lib/actions/analyze";
 import { applicationStatusLabels, priorityLabels } from "@/lib/labels";
 import type { Application, Employer } from "@/generated/prisma/client";
 
@@ -29,15 +34,53 @@ export function ApplicationForm({
   application,
   employers,
   initial,
+  aiAvailable = false,
 }: {
   action: (formData: FormData) => void;
   application?: (Application & { employer: Employer | null }) | null;
   employers: { id: string; name: string }[];
   initial?: ApplicationFormInitial;
+  aiAvailable?: boolean;
 }) {
-  const deadlineValue = application?.deadline
+  const initialDeadline = application?.deadline
     ? new Date(application.deadline).toISOString().slice(0, 10)
     : (initial?.deadline ?? "");
+
+  const [jobUrl, setJobUrl] = useState(application?.jobUrl ?? initial?.jobUrl ?? "");
+  const [title, setTitle] = useState(application?.title ?? initial?.title ?? "");
+  const [company, setCompany] = useState(application?.employer?.name ?? initial?.company ?? "");
+  const [location, setLocation] = useState(application?.location ?? initial?.location ?? "");
+  const [salary, setSalary] = useState(application?.salary ?? initial?.salary ?? "");
+  const [deadline, setDeadline] = useState(initialDeadline);
+  const [description, setDescription] = useState(application?.description ?? initial?.description ?? "");
+  const [autofilling, startAutofill] = useTransition();
+
+  function handleAutofill() {
+    if (!jobUrl.trim()) {
+      toast.error("Paste the company's job listing URL first");
+      return;
+    }
+    startAutofill(async () => {
+      try {
+        const { text } = await fetchJobFromUrl(jobUrl.trim());
+        setDescription(text);
+
+        if (aiAvailable) {
+          const fields = await analyzeJob(text);
+          if (fields.title) setTitle(fields.title);
+          if (fields.company) setCompany(fields.company);
+          if (fields.location) setLocation(fields.location);
+          if (fields.salary) setSalary(fields.salary);
+          if (fields.deadline) setDeadline(fields.deadline);
+          toast.success("Filled in from the job listing — review before saving.");
+        } else {
+          toast.success("Pulled the job description — add an ANTHROPIC_API_KEY to auto-fill the other fields too.");
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Couldn't read that URL");
+      }
+    });
+  }
 
   return (
     <form action={action} className="grid max-w-2xl gap-4">
@@ -47,10 +90,37 @@ export function ApplicationForm({
         ))}
       </datalist>
 
+      <Card>
+        <CardContent className="pt-6">
+          <Label htmlFor="autofill-url">Company&apos;s job listing URL</Label>
+          <div className="mt-1.5 flex gap-2">
+            <div className="relative flex-1">
+              <Link2 className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="autofill-url"
+                value={jobUrl}
+                onChange={(e) => setJobUrl(e.target.value)}
+                placeholder="https://company.com/careers/graduate-role"
+                className="pl-8"
+              />
+            </div>
+            <Button type="button" variant="outline" disabled={autofilling} onClick={handleAutofill}>
+              <Wand2 className="h-4 w-4" />
+              {autofilling ? "Filling in..." : "Auto-fill"}
+            </Button>
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {aiAvailable
+              ? "Copies the job description and fills in the title, company, location, salary, and deadline below."
+              : "Copies the job description in. Add an ANTHROPIC_API_KEY to also auto-fill the fields below."}
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label htmlFor="title">Job title *</Label>
-          <Input id="title" name="title" defaultValue={application?.title ?? initial?.title} required />
+          <Input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="company">Company *</Label>
@@ -58,7 +128,8 @@ export function ApplicationForm({
             id="company"
             name="company"
             list="employer-names"
-            defaultValue={application?.employer?.name ?? initial?.company}
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
             required
           />
         </div>
@@ -67,18 +138,18 @@ export function ApplicationForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label htmlFor="location">Location</Label>
-          <Input id="location" name="location" defaultValue={application?.location ?? initial?.location ?? ""} />
+          <Input id="location" name="location" value={location} onChange={(e) => setLocation(e.target.value)} />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="salary">Salary / stipend</Label>
-          <Input id="salary" name="salary" placeholder="e.g. £24,000" defaultValue={application?.salary ?? initial?.salary ?? ""} />
+          <Input id="salary" name="salary" placeholder="e.g. £24,000" value={salary} onChange={(e) => setSalary(e.target.value)} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="grid gap-1.5">
           <Label htmlFor="jobUrl">Job listing URL</Label>
-          <Input id="jobUrl" name="jobUrl" defaultValue={application?.jobUrl ?? initial?.jobUrl ?? ""} />
+          <Input id="jobUrl" name="jobUrl" value={jobUrl} onChange={(e) => setJobUrl(e.target.value)} />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="source">Source</Label>
@@ -119,7 +190,7 @@ export function ApplicationForm({
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="deadline">Application deadline</Label>
-          <Input id="deadline" name="deadline" type="date" defaultValue={deadlineValue} />
+          <Input id="deadline" name="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
         </div>
       </div>
 
@@ -129,7 +200,8 @@ export function ApplicationForm({
           id="description"
           name="description"
           rows={6}
-          defaultValue={application?.description ?? initial?.description ?? ""}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
           placeholder="Paste the job posting here — used as input when tailoring your CV and cover letter."
         />
       </div>

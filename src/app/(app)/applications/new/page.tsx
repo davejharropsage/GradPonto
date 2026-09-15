@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ApplicationForm } from "@/components/applications/application-form";
 import { createApplication } from "@/lib/actions/applications";
 import { getEmployerOptions } from "@/lib/data/employers";
+import { isAiConfigured } from "@/lib/ai/client";
 
 export default async function NewApplicationPage({
   searchParams,
@@ -24,7 +25,12 @@ export default async function NewApplicationPage({
   return (
     <div>
       <PageHeader title="New Application" />
-      <ApplicationForm action={createApplication} employers={employers} initial={hasInitial ? initial : undefined} />
+      <ApplicationForm
+        action={createApplication}
+        employers={employers}
+        initial={hasInitial ? initial : undefined}
+        aiAvailable={isAiConfigured()}
+      />
     </div>
   );
 }

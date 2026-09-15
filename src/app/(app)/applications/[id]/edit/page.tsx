@@ -4,6 +4,7 @@ import { ApplicationForm } from "@/components/applications/application-form";
 import { getApplication } from "@/lib/data/applications";
 import { getEmployerOptions } from "@/lib/data/employers";
 import { updateApplication } from "@/lib/actions/applications";
+import { isAiConfigured } from "@/lib/ai/client";
 
 export default async function EditApplicationPage({
   params,
@@ -17,7 +18,12 @@ export default async function EditApplicationPage({
   return (
     <div>
       <PageHeader title={`Edit ${application.title}`} />
-      <ApplicationForm action={updateApplication.bind(null, id)} application={application} employers={employers} />
+      <ApplicationForm
+        action={updateApplication.bind(null, id)}
+        application={application}
+        employers={employers}
+        aiAvailable={isAiConfigured()}
+      />
     </div>
   );
 }
