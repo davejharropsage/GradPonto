@@ -3,48 +3,59 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { navLinks, comingSoonLinks } from "./nav-links";
-import { Badge } from "@/components/ui/badge";
+import { navSections, comingSoonLinks } from "./nav-links";
+
+const row = "group relative flex h-9 items-center gap-3 rounded-lg px-3 text-[13.5px] font-semibold transition-colors";
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="px-3 pb-1 pt-4 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white/40">{children}</p>
+  );
+}
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-col gap-1 p-3">
-      {navLinks.map((link) => {
-        const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
-        const Icon = link.icon;
-        return (
-          <Link
-            key={link.href}
-            href={link.href}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
-              active
-                ? "bg-primary text-primary-foreground"
-                : "text-white/85 hover:bg-white/10 hover:text-white"
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {link.label}
-          </Link>
-        );
-      })}
+    <nav aria-label="Main" className="flex flex-col gap-0.5 p-3">
+      {navSections.map((section, index) => (
+        <div key={section.label ?? "top"} className="flex flex-col gap-0.5">
+          {section.label ? <SectionLabel>{section.label}</SectionLabel> : null}
+          {section.links.map((link) => {
+            const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+            const Icon = link.icon;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  row,
+                  active ? "bg-white/[0.13] text-white" : "text-white/75 hover:bg-white/[0.07] hover:text-white"
+                )}
+              >
+                <Icon
+                  className={cn("h-[17px] w-[17px] shrink-0", active ? "text-[#79c5cd]" : "text-white/55 group-hover:text-white/85")}
+                  strokeWidth={active ? 2.2 : 1.9}
+                />
+                {link.label}
+              </Link>
+            );
+          })}
+          {index === 0 && <div className="mx-1 mt-2 h-px bg-white/10" />}
+        </div>
+      ))}
 
-      <div className="mt-2 border-t pt-2">
+      <div className="flex flex-col gap-0.5">
+        <SectionLabel>Insights</SectionLabel>
         {comingSoonLinks.map((link) => {
           const Icon = link.icon;
           return (
-            <div
-              key={link.label}
-              className="flex cursor-not-allowed items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground/50"
-            >
-              <Icon className="h-4 w-4" />
+            <div key={link.label} className={cn(row, "cursor-not-allowed text-white/35")} aria-disabled="true">
+              <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={1.9} />
               <span className="flex-1">{link.label}</span>
-              <Badge variant="outline" className="text-[10px] text-muted-foreground/70">
-                Soon
-              </Badge>
+              <span className="rounded-full border border-white/20 px-1.5 py-px text-[10px] font-bold text-white/50">Soon</span>
             </div>
           );
         })}
