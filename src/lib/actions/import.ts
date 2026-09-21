@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 import { upsertEmployerId } from "@/lib/actions/applications";
 
 export interface ImportRow {
@@ -29,6 +29,7 @@ function toDate(value: string | undefined) {
 }
 
 export async function bulkImportApplications(rows: ImportRow[]) {
+  const db = await userDb();
   let created = 0;
 
   for (const row of rows) {

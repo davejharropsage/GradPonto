@@ -45,13 +45,18 @@ Base UI's `Select.Value` only knows an option's display label once its `Select.I
 
 `export const dynamic = "force-dynamic"` in `src/app/layout.tsx` applies to the whole app. Without it, Next.js tries to statically prerender pages with no dynamic data dependency at *build* time, which runs Prisma queries during `next build` — before you'd necessarily want the build machine touching the real `dev.db`, and fragile in exactly the way described above (bundled build-time code resolving paths differently than runtime code). Since this is a single-user local app where every page reflects live database state, there's no benefit to static generation here.
 
-## Why no authentication in v1
+## Authentication and data ownership
 
-This is a single-user, localhost-only tool. Authentication adds meaningful complexity (session handling, password storage, route guarding) for zero benefit while the app never listens on anything but `localhost`. It becomes necessary the moment this is exposed to a LAN or the internet — see the README's "Local network access" section, which flags this explicitly as a prerequisite, not an afterthought.
+The first version had no authentication (one local user). It now has real accounts.
 
-## Why AI tailoring and PDF export are isolated in `lib/ai/` and `lib/pdf/`
-
-Both are optional, single-purpose capabilities with an external dependency (an API key; a rendering library). Keeping them in their own files with a narrow function signature (`tailorDocument(...)`, `renderDocumentToPdf(...)`) means either could be swapped for a different provider or library later by touching one file, not scattered call sites.
+- **Passwordless email codes.** Nothing to leak or reset. A code is HMAC-hashed (`AUTH_SECRET`) and bound to the email, expires in 10 minutes, is single-use, and locks after 5 wrong guesses. The attempt is counted atomically before the comparison so parallel guesses can't beat the limit. The response to "send me a code" is identical whether or not the address has an account, so the form can't be used to discover who is registered.
+- **Database sessions.** The cookie holds a random 256-bit token; only its SHA-256 hash is stored (`Session.tokenHash`), so a copy of the database can't be replayed as a login. Cookies are `httpOnly`, `SameSite=Lax`, and `Secure` when `APP_URL` is https. Following Next.js's own guidance, `src/proxy.ts` only checks that a cookie exists (no database call, runs on every request) and the real check sits next to the data in `src/lib/auth/user.ts`.
+- **Per-user data via a scoped client.** All user-owned tables carry `userId`. `scopedDb(userId)` (a Prisma client extension) adds it to every `where` and stamps it on every create, and refuses any operation it doesn't know how to scope. Rather than editing ~90 call sites by hand and hoping none is missed, the raw client is exported as `prisma` (not `db`), so leftover unscoped code fails to compile.
+- **The `userId @default("")` placeholder.** It only makes the field optional in TypeScript's create types (the scoped client always sets the real owner). `""` isn't a real user id, so a write that bypasses the scoped client fails the foreign-key check instead of creating misfiled data.
+- **Foreign keys sent by the browser.** A scoped client can't know that an `applicationId` in a form belongs to someone else, so actions that link records verify ownership first (activities, document duplication, employer merging).
+- **Every Server Action is a public endpoint.** Even ones that don't touch the database (the AI analysis actions) call `requireRegisteredUser()`, otherwise anonymous visitors could spend AI credits.
+- **Importing a job from a URL** makes the server fetch a user-supplied address. Now that anyone can register, `src/lib/net/safe-fetch.ts` refuses private, loopback and link-local addresses, re-checks every redirect, and caps the size. It can't fully stop DNS rebinding; that needs an egress proxy.
+- **Deliberate limits:** the per-IP limiter is in-memory and generous (students share campus IPs); the strict limits are per email and stored in the database.
 
 ## Why `(app)` is a route group, and `/landing` sits outside it
 
@@ -79,6 +84,6 @@ Both `analyzeJobDescription` and `matchCvToJob` (`lib/ai/`) prompt Claude to rep
 
 CV/document parsing also only extracts **text**, not layout — a two-column CV or a scanned image with no text layer will produce poor or empty results respectively; the latter throws a clear "no text found" error rather than silently returning nothing.
 
-## Why sign-up and the Pro plan toggle are local-only, not real billing
+## Why the Pro plan toggle is still a simulation
 
-Nothing in this app has a real backend to hold a Stripe (or similar) secret key safely, and there's no authentication to tie a subscription to. `createSignup` and `setPlan` (`lib/actions/signup.ts`, `lib/actions/profile.ts`) write directly to the local `Signup` and `Profile` tables — no network call, no charge. This mirrors the shape a real flow would have (a `Plan` enum on the user, an upgrade action) so that wiring up real billing later is a matter of replacing those two functions' bodies, not restructuring the schema. See the README's "Real subscriptions / billing" section for what that would actually take.
+`User.plan` can be flipped from the Account page, but no payment processor is connected and nothing is charged. Real billing needs a payment provider with server-side secret keys and webhooks; subscriptions would then attach to the signed-in `User`.

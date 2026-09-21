@@ -54,20 +54,3 @@ export const documentSchema = z.object({
 });
 
 export type DocumentInput = z.infer<typeof documentSchema>;
-
-export const signupSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-  email: z.string().trim().email("Enter a valid email"),
-  plan: z.enum(["FREE", "PRO"]),
-  utmSource: z.string().trim().optional().or(z.literal("")),
-  utmMedium: z.string().trim().optional().or(z.literal("")),
-  utmCampaign: z.string().trim().optional().or(z.literal("")),
-});
-
-export type SignupInput = z.infer<typeof signupSchema>;
-
-export const profileSchema = z.object({
-  name: z.string().trim().optional().or(z.literal("")),
-});
-
-export type ProfileInput = z.infer<typeof profileSchema>;

@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 import { applicationStatuses } from "@/lib/labels";
 
 const PAGE_SIZE = 20;
@@ -9,6 +9,7 @@ export async function getApplications(params: {
   archived?: boolean;
   page?: number;
 }) {
+  const db = await userDb();
   const page = params.page && params.page > 0 ? params.page : 1;
 
   // A search should be able to find an archived application too — "archived"
@@ -54,7 +55,8 @@ export async function getApplications(params: {
   };
 }
 
-export function getApplication(id: string) {
+export async function getApplication(id: string) {
+  const db = await userDb();
   return db.application.findUnique({
     where: { id },
     include: {
@@ -69,6 +71,7 @@ export function getApplication(id: string) {
 // block) about a likely duplicate when creating or editing an application
 // for a company that already has one on record.
 export async function getActiveApplicationSummaries(excludeId?: string) {
+  const db = await userDb();
   const applications = await db.application.findMany({
     where: {
       archived: false,
@@ -85,7 +88,8 @@ export async function getActiveApplicationSummaries(excludeId?: string) {
   }));
 }
 
-export function getApplicationOptions() {
+export async function getApplicationOptions() {
+  const db = await userDb();
   return db.application.findMany({
     where: { archived: false },
     select: { id: true, title: true, employer: { select: { name: true } } },
@@ -97,6 +101,7 @@ export function getApplicationOptions() {
 // applications don't belong on an active board, even if their status would
 // otherwise place them in a column.
 export async function getApplicationsByStatus() {
+  const db = await userDb();
   const applications = await db.application.findMany({
     where: { archived: false },
     include: { employer: true },
@@ -112,6 +117,7 @@ export async function getApplicationsByStatus() {
 
 // Applications grouped for the Deadlines page: overdue vs. due within 30 days.
 export async function getDeadlinesGrouped() {
+  const db = await userDb();
   const now = new Date();
   const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 

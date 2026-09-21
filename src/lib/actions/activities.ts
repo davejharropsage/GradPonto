@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 import { activitySchema } from "@/lib/validations";
 
 function toNullable(value: string | undefined) {
@@ -13,7 +13,12 @@ function toDate(value: string | undefined) {
 }
 
 export async function createActivity(formData: FormData) {
+  const db = await userDb();
   const parsed = activitySchema.parse(Object.fromEntries(formData));
+
+  // The id comes from the browser, so confirm the application is really this user's
+  // before linking to it. (The scoped client makes this throw for anyone else's.)
+  await db.application.findUniqueOrThrow({ where: { id: parsed.applicationId }, select: { id: true } });
 
   await db.activity.create({
     data: {
@@ -30,6 +35,7 @@ export async function createActivity(formData: FormData) {
 }
 
 export async function updateActivity(id: string, formData: FormData) {
+  const db = await userDb();
   const parsed = activitySchema.parse(Object.fromEntries(formData));
 
   const activity = await db.activity.update({
@@ -47,6 +53,7 @@ export async function updateActivity(id: string, formData: FormData) {
 }
 
 export async function toggleActivityComplete(id: string, completed: boolean) {
+  const db = await userDb();
   const activity = await db.activity.update({
     where: { id },
     data: { completedAt: completed ? new Date() : null },
@@ -57,6 +64,7 @@ export async function toggleActivityComplete(id: string, completed: boolean) {
 }
 
 export async function deleteActivity(id: string) {
+  const db = await userDb();
   const activity = await db.activity.delete({ where: { id } });
   revalidatePath("/");
   if (activity.applicationId) revalidatePath(`/applications/${activity.applicationId}`);

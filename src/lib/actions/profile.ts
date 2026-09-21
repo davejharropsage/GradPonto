@@ -1,28 +1,28 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/db";
-import { profileSchema } from "@/lib/validations";
+import { z } from "zod";
+import { requireRegisteredUser } from "@/lib/auth/user";
+import { updatePlan, updateProfileDetails } from "@/lib/auth/account";
+
+const profileSchema = z.object({
+  name: z.string().trim().min(1, "Enter your name.").max(80),
+  university: z.string().trim().min(1, "Enter your university.").max(120),
+});
 
 export async function updateProfile(formData: FormData) {
-  const parsed = profileSchema.parse(Object.fromEntries(formData));
+  const user = await requireRegisteredUser();
+  const parsed = profileSchema.parse({ name: formData.get("name"), university: formData.get("university") });
 
-  await db.profile.upsert({
-    where: { id: "default" },
-    create: { id: "default", name: parsed.name || null },
-    update: { name: parsed.name || null },
-  });
+  await updateProfileDetails(user.id, parsed);
 
   revalidatePath("/");
   revalidatePath("/account");
 }
 
 export async function setPlan(plan: "FREE" | "PRO") {
-  await db.profile.upsert({
-    where: { id: "default" },
-    create: { id: "default", plan },
-    update: { plan },
-  });
+  const user = await requireRegisteredUser();
+  await updatePlan(user.id, plan === "PRO" ? "PRO" : "FREE");
 
   revalidatePath("/");
   revalidatePath("/account");

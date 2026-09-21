@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 
 const dateLike = z.union([z.string(), z.date()]).nullable().optional();
 
@@ -95,6 +95,7 @@ function toDateOrNull(value: string | Date | null | undefined) {
 // data, so restoring is safe to run more than once or against a non-empty
 // database (e.g. combining a backup from another device).
 export async function restoreBackupData(jsonText: string) {
+  const db = await userDb();
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonText);
@@ -201,13 +202,6 @@ export async function restoreBackupData(jsonText: string) {
       });
     }
 
-    if (backup.profile) {
-      await tx.profile.upsert({
-        where: { id: "default" },
-        create: { id: "default", name: backup.profile.name || null, plan: (backup.profile.plan as never) ?? "FREE" },
-        update: { name: backup.profile.name || null, plan: (backup.profile.plan as never) ?? undefined },
-      });
-    }
 
     return {
       employers: employerIdMap.size,

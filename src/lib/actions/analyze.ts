@@ -2,7 +2,8 @@
 
 import { analyzeJobDescription, type JobAnalysis } from "@/lib/ai/analyze-job";
 import { matchCvToJob, type CvMatch } from "@/lib/ai/match-cv";
-import { db } from "@/lib/db";
+import { requireRegisteredUser, userDb } from "@/lib/auth/user";
+import { fetchPublicPage } from "@/lib/net/safe-fetch";
 
 function stripHtml(html: string) {
   return html
@@ -18,29 +19,22 @@ function stripHtml(html: string) {
 }
 
 export async function fetchJobFromUrl(url: string): Promise<{ text: string }> {
-  const parsed = new URL(url); // throws on an invalid URL, caught by the caller
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("Only http(s) URLs are supported");
-  }
+  await requireRegisteredUser();
 
-  const res = await fetch(parsed.toString(), {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; PlacementPilot/1.0)" },
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!res.ok) throw new Error(`Could not fetch that URL (HTTP ${res.status})`);
-
-  const html = await res.text();
+  const html = await fetchPublicPage(url, { userAgent: "Mozilla/5.0 (compatible; GradPonto/1.0)" });
   const text = stripHtml(html);
-  // Job pages are often mostly nav/footer noise — cap what we send to Claude.
+  // Job pages are often mostly nav/footer noise, so cap what we send to Claude.
   return { text: text.slice(0, 12000) };
 }
 
 export async function analyzeJob(jobText: string): Promise<JobAnalysis> {
+  await requireRegisteredUser();
   if (!jobText.trim()) throw new Error("Paste a job description first");
   return analyzeJobDescription(jobText);
 }
 
 export async function matchCv(params: { cvContent: string; applicationId: string }): Promise<CvMatch> {
+  const db = await userDb();
   const application = await db.application.findUniqueOrThrow({ where: { id: params.applicationId } });
   if (!application.description) {
     throw new Error("This application has no job description saved to match against");

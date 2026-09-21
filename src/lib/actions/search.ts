@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 
 export interface SearchResults {
   applications: { id: string; title: string; employerName: string | null; archived: boolean }[];
@@ -10,6 +10,7 @@ export interface SearchResults {
 // Deliberately unfiltered by status or archived state — archived means
 // hidden from the default browse view, not unsearchable.
 export async function getSearchIndex(): Promise<SearchResults> {
+  const db = await userDb();
   const [applications, employers] = await Promise.all([
     db.application.findMany({
       select: { id: true, title: true, archived: true, employer: { select: { name: true } } },

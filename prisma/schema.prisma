@@ -47,29 +47,63 @@ enum Plan {
   PRO
 }
 
-// Single-row table holding the local user's display name and plan.
-// There is no authentication in this app (single local user) — this just
-// drives the dashboard greeting and the "Pro" upsell state.
-model Profile {
-  id   String @id @default("default")
-  name String?
-  plan Plan    @default(FREE)
+// A registered person. Passwordless: they prove they own `email` by entering a
+// one-time code (see LoginCode). The account exists as soon as the email is
+// verified; `registeredAt` is set once they have also given their name and
+// university, and the app is only usable after that.
+//
+// Every row of user data below (Employer, Application, Document, Goal,
+// Activity) belongs to exactly one User via `userId`. Always read and write
+// them through the scoped client from `userDb()` in src/lib/auth, which
+// injects `userId` for you, never through the raw Prisma client.
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique // stored lower-cased
+  name            String?
+  university      String?
+  plan            Plan      @default(FREE)
+  emailVerifiedAt DateTime?
+  registeredAt    DateTime?
+  lastLoginAt     DateTime?
 
+  sessions     Session[]
+  employers    Employer[]
+  applications Application[]
+  documents    Document[]
+  goals        Goal[]
+  activities   Activity[]
+
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Captured from the public landing page's sign-up form. Not wired to real
-// billing (no Stripe keys) — see ARCHITECTURE.md for what a real
-// subscription flow would need.
-model Signup {
+// A signed-in browser. The cookie holds a random token; only its SHA-256 hash
+// is stored here, so a copy of the database can't be used to hijack sessions.
+model Session {
   id         String   @id @default(cuid())
-  name       String
-  email      String   @unique
-  plan       Plan     @default(FREE)
-  utmSource   String?
-  utmMedium   String?
-  utmCampaign String?
+  tokenHash  String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  expiresAt  DateTime
+  userAgent  String?
   createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// A one-time sign-in code emailed to `email`. Only an HMAC of the code is
+// stored. Codes expire, are single-use, and lock after too many wrong guesses.
+model LoginCode {
+  id         String    @id @default(cuid())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
 }
 
 model Employer {
@@ -79,11 +113,18 @@ model Employer {
   industry String?
   notes    String?
 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Never rely on this default. scopedDb() always sets the real owner; the "" placeholder only
+  // makes the field optional in TypeScript. It is not a real user id, so a write that bypasses
+  // the scoped client fails the foreign-key check instead of creating misfiled data.
+  userId String @default("")
+
   applications Application[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@index([name])
 }
 
@@ -108,12 +149,19 @@ model Application {
   employer   Employer? @relation(fields: [employerId], references: [id])
   employerId String?
 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Never rely on this default. scopedDb() always sets the real owner; the "" placeholder only
+  // makes the field optional in TypeScript. It is not a real user id, so a write that bypasses
+  // the scoped client fails the foreign-key check instead of creating misfiled data.
+  userId String @default("")
+
   documents  Document[]
   activities Activity[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@index([employerId])
   @@index([status])
   @@index([deadline])
@@ -130,9 +178,16 @@ model Document {
   application   Application? @relation(fields: [applicationId], references: [id])
   applicationId String?
 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Never rely on this default. scopedDb() always sets the real owner; the "" placeholder only
+  // makes the field optional in TypeScript. It is not a real user id, so a write that bypasses
+  // the scoped client fails the foreign-key check instead of creating misfiled data.
+  userId String @default("")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@index([applicationId])
   @@index([kind])
 }
@@ -146,8 +201,15 @@ model Goal {
   startDate DateTime
   endDate   DateTime
 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Never rely on this default. scopedDb() always sets the real owner; the "" placeholder only
+  // makes the field optional in TypeScript. It is not a real user id, so a write that bypasses
+  // the scoped client fails the foreign-key check instead of creating misfiled data.
+  userId String @default("")
+
   createdAt DateTime @default(now())
 
+  @@index([userId])
   @@index([startDate, endDate])
 }
 
@@ -162,9 +224,16 @@ model Activity {
   application   Application? @relation(fields: [applicationId], references: [id])
   applicationId String?
 
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Never rely on this default. scopedDb() always sets the real owner; the "" placeholder only
+  // makes the field optional in TypeScript. It is not a real user id, so a write that bypasses
+  // the scoped client fails the foreign-key check instead of creating misfiled data.
+  userId String @default("")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@index([applicationId])
   @@index([dueDate])
 }

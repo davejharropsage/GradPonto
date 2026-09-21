@@ -9,7 +9,7 @@ export async function ProCard() {
       <div className="rounded-lg bg-primary p-4 text-primary-foreground">
         <div className="flex items-center gap-2 font-semibold">
           <Sparkles className="h-4 w-4" />
-          PlacementPilot Pro
+          GradPonto Pro
         </div>
         <p className="mt-1 text-sm text-primary-foreground/80">You have unlimited applications and advanced analytics.</p>
       </div>
@@ -20,7 +20,7 @@ export async function ProCard() {
     <div className="rounded-lg bg-primary p-4 text-primary-foreground">
       <div className="flex items-center gap-2 font-semibold">
         <Sparkles className="h-4 w-4" />
-        PlacementPilot Pro
+        GradPonto Pro
       </div>
       <p className="mt-1 text-sm text-primary-foreground/80">Unlimited applications &amp; advanced analytics.</p>
       <LinkButton href="/account" variant="secondary" size="sm" className="mt-3 w-full justify-center">

@@ -84,7 +84,7 @@ export function CommandPalette() {
     <CommandDialog
       open={open}
       onOpenChange={setOpen}
-      title="Search PlacementPilot"
+      title="Search GradPonto"
       description="Jump to a page, application, or company"
     >
       <Command>

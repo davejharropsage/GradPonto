@@ -1,8 +1,9 @@
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 
 const PAGE_SIZE = 20;
 
 export async function getEmployers(params: { q?: string; page?: number }) {
+  const db = await userDb();
   const page = params.page && params.page > 0 ? params.page : 1;
 
   const where = params.q
@@ -28,7 +29,8 @@ export async function getEmployers(params: { q?: string; page?: number }) {
   return { employers, total, page, pageSize: PAGE_SIZE, totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }
 
-export function getEmployer(id: string) {
+export async function getEmployer(id: string) {
+  const db = await userDb();
   return db.employer.findUnique({
     where: { id },
     include: {
@@ -37,7 +39,8 @@ export function getEmployer(id: string) {
   });
 }
 
-export function getEmployerOptions() {
+export async function getEmployerOptions() {
+  const db = await userDb();
   return db.employer.findMany({
     select: { id: true, name: true },
     orderBy: { name: "asc" },

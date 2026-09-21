@@ -1,7 +1,8 @@
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 import { nextActionLabels } from "@/lib/labels";
 
 export async function getDashboardStats() {
+  const db = await userDb();
   const now = new Date();
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -18,6 +19,7 @@ export async function getDashboardStats() {
 
 // The 5-bucket "Your Application Progress" rollup shown on the dashboard.
 export async function getProgressBuckets() {
+  const db = await userDb();
   const byStatus = await db.application.groupBy({
     by: ["status"],
     where: { archived: false },
@@ -41,6 +43,7 @@ export async function getProgressBuckets() {
 
 // Applications that need action from the user, ranked by priority then deadline.
 export async function getNeedsAttention(limit = 4) {
+  const db = await userDb();
   const applications = await db.application.findMany({
     where: { status: { in: Object.keys(nextActionLabels) as never[] }, archived: false },
     include: { employer: true },
@@ -54,7 +57,8 @@ export async function getNeedsAttention(limit = 4) {
   }));
 }
 
-export function getRecentActivity(limit = 8) {
+export async function getRecentActivity(limit = 8) {
+  const db = await userDb();
   return db.activity.findMany({
     orderBy: { createdAt: "desc" },
     take: limit,
@@ -62,7 +66,8 @@ export function getRecentActivity(limit = 8) {
   });
 }
 
-export function getUpcomingDeadlines(limit = 8) {
+export async function getUpcomingDeadlines(limit = 8) {
+  const db = await userDb();
   return db.application.findMany({
     where: {
       deadline: { gte: new Date() },
@@ -77,7 +82,8 @@ export function getUpcomingDeadlines(limit = 8) {
 
 // Applications sitting in an early, pre-application stage that haven't been
 // touched in a while — easy to quietly forget about.
-export function getStaleApplications(limit = 6, staleAfterDays = 14) {
+export async function getStaleApplications(limit = 6, staleAfterDays = 14) {
+  const db = await userDb();
   const cutoff = new Date(Date.now() - staleAfterDays * 24 * 60 * 60 * 1000);
 
   return db.application.findMany({
@@ -94,7 +100,8 @@ export function getStaleApplications(limit = 6, staleAfterDays = 14) {
 
 // Open interview/task/follow-up items due soon (or already overdue) that
 // aren't surfaced anywhere outside an application's own timeline.
-export function getUpcomingReminders(limit = 6, withinDays = 7) {
+export async function getUpcomingReminders(limit = 6, withinDays = 7) {
+  const db = await userDb();
   const cutoff = new Date(Date.now() + withinDays * 24 * 60 * 60 * 1000);
 
   return db.activity.findMany({
@@ -110,7 +117,8 @@ export function getUpcomingReminders(limit = 6, withinDays = 7) {
   });
 }
 
-export function getRecentApplications(limit = 5) {
+export async function getRecentApplications(limit = 5) {
+  const db = await userDb();
   return db.application.findMany({
     where: { archived: false },
     orderBy: { createdAt: "desc" },

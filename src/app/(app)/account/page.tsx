@@ -24,9 +24,18 @@ export default async function AccountPage() {
         <CardContent>
           <form action={updateProfile} className="grid gap-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="name">Display name</Label>
-              <Input id="name" name="name" defaultValue={profile.name ?? ""} placeholder="e.g. Lucas" />
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" value={profile.email} readOnly disabled />
+              <p className="text-xs text-muted-foreground">You sign in with a one-time code sent to this address.</p>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" name="name" defaultValue={profile.name ?? ""} required maxLength={80} autoComplete="name" />
               <p className="text-xs text-muted-foreground">Used for the dashboard greeting.</p>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="university">University</Label>
+              <Input id="university" name="university" defaultValue={profile.university ?? ""} required maxLength={120} autoComplete="organization" />
             </div>
             <div>
               <Button type="submit">Save</Button>
@@ -43,12 +52,11 @@ export default async function AccountPage() {
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
             {profile.plan === "PRO"
-              ? "You're on PlacementPilot Pro: unlimited applications and advanced analytics."
+              ? "You're on GradPonto Pro: unlimited applications and advanced analytics."
               : "You're on the Free plan. Upgrade to Pro for unlimited applications and advanced analytics."}
           </p>
           <p className="text-xs text-muted-foreground">
-            This app runs entirely on your own machine. There is no real payment processor connected. Choosing
-            Pro here just flips a local flag; see the landing page for the pricing this mirrors.
+            No payment processor is connected yet, so choosing Pro here just switches a setting on your account.
           </p>
           <form action={async () => { "use server"; await setPlan(profile.plan === "PRO" ? "FREE" : "PRO"); }}>
             <Button type="submit" variant={profile.plan === "PRO" ? "outline" : "default"}>
@@ -64,8 +72,8 @@ export default async function AccountPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Everything in this app lives in a single local database file. A backup is a complete, portable copy of
-            it: applications, employers, documents, notes, activity history, and goals.
+            Your applications, employers, documents, notes, activity history and goals are stored in your GradPonto
+            account. A backup is a complete, portable copy of them that you can keep or restore later.
           </p>
           <div className="flex flex-wrap gap-2">
             <LinkButton href="/api/backup/export" variant="outline">

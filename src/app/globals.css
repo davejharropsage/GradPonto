@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-figtree);
+  --font-sans: var(--font-manrope);
   --font-mono: var(--font-ibm-plex-mono);
-  --font-heading: var(--font-figtree);
+  --font-heading: var(--font-archivo);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +48,88 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* GradPonto design tokens. Led by grassfeld.com (soft ice-blue surfaces, ink buttons,
+ * condensed heavy headlines), with Sage's influence kept quiet. See the project's
+ * gradponto-style guide for the reasoning behind each value. */
 :root {
-  --background: #fbfcfa;
-  --foreground: #0a1f14;
+  --background: #f5f7fb;
+  --foreground: #202128;
   --card: #ffffff;
-  --card-foreground: #0a1f14;
+  --card-foreground: #202128;
   --popover: #ffffff;
-  --popover-foreground: #0a1f14;
-  --primary: #00ce55;
-  --primary-foreground: #052b16;
-  --secondary: #f2f6f2;
-  --secondary-foreground: #0a1f14;
-  --muted: #f2f6f2;
-  --muted-foreground: #5b6e64;
-  --accent: #e4f6ea;
-  --accent-foreground: #0a6b38;
+  --popover-foreground: #202128;
+  --primary: #202128;
+  --primary-foreground: #ffffff;
+  --secondary: #e9eef8;
+  --secondary-foreground: #202128;
+  --muted: #eef1f7;
+  --muted-foreground: #62646d;
+  --accent: #e3f3f5;
+  --accent-foreground: #202128;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #e3eae4;
-  --input: #e3eae4;
-  --ring: #00ce55;
-  --chart-1: #00ce55;
-  --chart-2: #0a6b38;
-  --chart-3: #6ee6a2;
-  --chart-4: #7a8c82;
-  --chart-5: #0a1f14;
-  --radius: 0.875rem;
-  --sidebar: #f2f6f2;
-  --sidebar-foreground: #0a1f14;
-  --sidebar-primary: #00ce55;
-  --sidebar-primary-foreground: #052b16;
-  --sidebar-accent: #e4f6ea;
-  --sidebar-accent-foreground: #0a6b38;
-  --sidebar-border: #e3eae4;
-  --sidebar-ring: #00ce55;
+  --border: #e1e6ef;
+  --input: #d3d9e6;
+  --ring: #476adb;
+  --chart-1: #476adb;
+  --chart-2: #43a8b2;
+  --chart-3: #86c159;
+  --chart-4: #79c5cd;
+  --chart-5: #202128;
+  --radius: 0.625rem;
+  --sidebar: #202128;
+  --sidebar-foreground: #f5f7fb;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #202128;
+  --sidebar-accent: #2b2d36;
+  --sidebar-accent-foreground: #dff1f3;
+  --sidebar-border: color-mix(in oklch, white, transparent 88%);
+  --sidebar-ring: #79c5cd;
+
+  /* Brand extras used by the landing page and sign-in screens */
+  --gp-ink: #202128;
+  --gp-ice: #f5f7fb;
+  --gp-ice-2: #e9eef8;
+  --gp-mint: #dff1f3;
+  --gp-blue: #476adb;
+  --gp-teal: #43a8b2;
+  --gp-teal-2: #79c5cd;
+  --gp-leaf: #86c159;
+  --gp-sage: #006b3c;
+  --gp-sage-tint: #d8f3e1;
 }
 
 .dark {
-  --background: #0a1f14;
-  --foreground: #f2f7f3;
-  --card: #122e20;
-  --card-foreground: #f2f7f3;
-  --popover: #122e20;
-  --popover-foreground: #f2f7f3;
-  --primary: #00ce55;
-  --primary-foreground: #052b16;
-  --secondary: #17392a;
-  --secondary-foreground: #f2f7f3;
-  --muted: #122e20;
-  --muted-foreground: #8fa79a;
-  --accent: #17392a;
-  --accent-foreground: #6ee6a2;
+  --background: #16171c;
+  --foreground: #f5f7fb;
+  --card: #202128;
+  --card-foreground: #f5f7fb;
+  --popover: #202128;
+  --popover-foreground: #f5f7fb;
+  --primary: #ffffff;
+  --primary-foreground: #202128;
+  --secondary: #2b2d36;
+  --secondary-foreground: #f5f7fb;
+  --muted: #2b2d36;
+  --muted-foreground: #a9aebb;
+  --accent: #2b3546;
+  --accent-foreground: #dff1f3;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: color-mix(in oklch, white, transparent 90%);
-  --input: color-mix(in oklch, white, transparent 85%);
-  --ring: #00ce55;
-  --chart-1: #00ce55;
-  --chart-2: #6ee6a2;
-  --chart-3: #8fa79a;
-  --chart-4: #17392a;
-  --chart-5: #f2f7f3;
-  --sidebar: #122e20;
-  --sidebar-foreground: #f2f7f3;
-  --sidebar-primary: #00ce55;
-  --sidebar-primary-foreground: #052b16;
-  --sidebar-accent: #17392a;
-  --sidebar-accent-foreground: #6ee6a2;
-  --sidebar-border: color-mix(in oklch, white, transparent 90%);
-  --sidebar-ring: #00ce55;
+  --border: color-mix(in oklch, white, transparent 88%);
+  --input: color-mix(in oklch, white, transparent 84%);
+  --ring: #79c5cd;
+  --chart-1: #93b2ff;
+  --chart-2: #79c5cd;
+  --chart-3: #a3d977;
+  --chart-4: #dff1f3;
+  --chart-5: #ffffff;
+  --sidebar: #202128;
+  --sidebar-foreground: #f5f7fb;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #202128;
+  --sidebar-accent: #2b2d36;
+  --sidebar-accent-foreground: #dff1f3;
+  --sidebar-border: color-mix(in oklch, white, transparent 88%);
+  --sidebar-ring: #79c5cd;
 }
 
 @layer base {
@@ -126,6 +141,18 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Headlines are tall, condensed and heavy (Archivo stands in for Grassfeld's Right Grotesk). */
+  h1,
+  h2 {
+    font-family: var(--font-heading);
+    font-stretch: 76%;
+    font-weight: 900;
+    letter-spacing: 0.005em;
+  }
+  h3 {
+    font-family: var(--font-heading);
+    font-stretch: 84%;
   }
 }
 

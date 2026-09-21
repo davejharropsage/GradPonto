@@ -1,8 +1,9 @@
-import { db } from "@/lib/db";
+import { requireRegisteredUser } from "@/lib/auth/user";
 
+/** The signed-in user's details (name, university, plan). Redirects to sign-in if nobody is signed in. */
 export async function getProfile() {
-  const profile = await db.profile.findUnique({ where: { id: "default" } });
-  return profile ?? { id: "default", name: null, plan: "FREE" as const, updatedAt: new Date() };
+  const user = await requireRegisteredUser();
+  return { id: user.id, email: user.email, name: user.name, university: user.university, plan: user.plan };
 }
 
 export function getGreeting(hour = new Date().getHours()) {

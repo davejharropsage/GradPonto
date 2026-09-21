@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { getApiContext } from "@/lib/auth/user";
 import { renderDocumentToPdf } from "@/lib/pdf/render";
 import { documentKindLabels } from "@/lib/labels";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await getApiContext();
+  if (!ctx) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
   const { id } = await params;
-  const document = await db.document.findUnique({
+  const document = await ctx.db.document.findUnique({
     where: { id },
     include: { application: { include: { employer: true } } },
   });

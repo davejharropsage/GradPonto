@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 import { employerSchema } from "@/lib/validations";
 
 function toNullable(value: string | undefined) {
@@ -10,6 +10,7 @@ function toNullable(value: string | undefined) {
 }
 
 export async function createEmployer(formData: FormData) {
+  const db = await userDb();
   const parsed = employerSchema.parse(Object.fromEntries(formData));
 
   const employer = await db.employer.create({
@@ -26,6 +27,7 @@ export async function createEmployer(formData: FormData) {
 }
 
 export async function updateEmployer(id: string, formData: FormData) {
+  const db = await userDb();
   const parsed = employerSchema.parse(Object.fromEntries(formData));
 
   await db.employer.update({
@@ -44,6 +46,7 @@ export async function updateEmployer(id: string, formData: FormData) {
 }
 
 export async function deleteEmployer(id: string) {
+  const db = await userDb();
   await db.employer.delete({ where: { id } });
   revalidatePath("/employers");
 }
@@ -53,7 +56,15 @@ export async function deleteEmployer(id: string) {
 // employer's own notes/website/industry are discarded since they can't be
 // reconciled automatically.
 export async function mergeEmployers(sourceId: string, targetId: string) {
+  const db = await userDb();
   if (sourceId === targetId) throw new Error("Can't merge an employer into itself");
+
+  // Both ids come from the browser. Confirm they're this user's own, so applications can
+  // never be re-pointed at (or deleted from) someone else's employer.
+  await Promise.all([
+    db.employer.findUniqueOrThrow({ where: { id: sourceId }, select: { id: true } }),
+    db.employer.findUniqueOrThrow({ where: { id: targetId }, select: { id: true } }),
+  ]);
 
   await db.$transaction([
     db.application.updateMany({ where: { employerId: sourceId }, data: { employerId: targetId } }),

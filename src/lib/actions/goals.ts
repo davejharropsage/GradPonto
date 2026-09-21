@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 
 const goalSchema = z.object({
   target: z.coerce.number().int().min(1, "Target must be at least 1"),
@@ -11,6 +11,7 @@ const goalSchema = z.object({
 });
 
 export async function createGoal(formData: FormData) {
+  const db = await userDb();
   const parsed = goalSchema.parse(Object.fromEntries(formData));
 
   await db.goal.create({
@@ -25,6 +26,7 @@ export async function createGoal(formData: FormData) {
 }
 
 export async function deleteGoal(id: string) {
+  const db = await userDb();
   await db.goal.delete({ where: { id } });
   revalidatePath("/goals");
 }

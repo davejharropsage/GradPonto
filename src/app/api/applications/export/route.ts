@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { getApiContext } from "@/lib/auth/user";
 import { toCsv } from "@/lib/csv";
 import { applicationStatusLabels, priorityLabels } from "@/lib/labels";
 
@@ -8,7 +8,10 @@ function toIsoDate(date: Date | null): string {
 }
 
 export async function GET() {
-  const applications = await db.application.findMany({
+  const ctx = await getApiContext();
+  if (!ctx) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  const applications = await ctx.db.application.findMany({
     include: { employer: true },
     orderBy: { createdAt: "asc" },
   });
@@ -48,7 +51,7 @@ export async function GET() {
   ]);
 
   const csv = toCsv(headers, rows);
-  const filename = `placementpilot-applications-${toIsoDate(new Date())}.csv`;
+  const filename = `gradponto-applications-${toIsoDate(new Date())}.csv`;
 
   return new NextResponse(csv, {
     headers: {

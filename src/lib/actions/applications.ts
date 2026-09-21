@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 import { applicationSchema } from "@/lib/validations";
 import { applicationStatusLabels } from "@/lib/labels";
 
@@ -15,6 +15,7 @@ function toDate(value: string | undefined) {
 }
 
 export async function upsertEmployerId(name: string) {
+  const db = await userDb();
   const trimmed = name.trim();
   const existing = await db.employer.findFirst({ where: { name: trimmed } });
   if (existing) return existing.id;
@@ -23,6 +24,7 @@ export async function upsertEmployerId(name: string) {
 }
 
 async function logStatusChange(applicationId: string, from: string, to: string) {
+  const db = await userDb();
   if (from === to) return;
   await db.activity.create({
     data: {
@@ -34,6 +36,7 @@ async function logStatusChange(applicationId: string, from: string, to: string) 
 }
 
 export async function createApplication(formData: FormData) {
+  const db = await userDb();
   const parsed = applicationSchema.parse(Object.fromEntries(formData));
   const employerId = await upsertEmployerId(parsed.company);
 
@@ -62,6 +65,7 @@ export async function createApplication(formData: FormData) {
 }
 
 export async function updateApplication(id: string, formData: FormData) {
+  const db = await userDb();
   const parsed = applicationSchema.parse(Object.fromEntries(formData));
   const employerId = await upsertEmployerId(parsed.company);
 
@@ -98,6 +102,7 @@ export async function updateApplication(id: string, formData: FormData) {
 // Used by the Pipeline kanban board's drag-and-drop — updates status only,
 // without the redirect a full form submission would trigger.
 export async function updateApplicationStatus(id: string, status: string) {
+  const db = await userDb();
   const parsedStatus = applicationSchema.shape.status.parse(status);
   const existing = await db.application.findUniqueOrThrow({ where: { id } });
 
@@ -122,6 +127,7 @@ export async function updateApplicationStatus(id: string, status: string) {
 // timeline (those are specific to that particular application, not the role).
 // Status resets to INTERESTED since the duplicate hasn't been worked yet.
 export async function duplicateApplication(id: string) {
+  const db = await userDb();
   const original = await db.application.findUniqueOrThrow({ where: { id } });
 
   const copy = await db.application.create({
@@ -151,6 +157,7 @@ export async function duplicateApplication(id: string) {
 // Hides the application from the default active view without touching its
 // status or deleting anything — reversible via unarchiveApplication.
 export async function archiveApplication(id: string) {
+  const db = await userDb();
   await db.application.update({ where: { id }, data: { archived: true } });
   revalidatePath("/applications");
   revalidatePath(`/applications/${id}`);
@@ -160,6 +167,7 @@ export async function archiveApplication(id: string) {
 }
 
 export async function unarchiveApplication(id: string) {
+  const db = await userDb();
   await db.application.update({ where: { id }, data: { archived: false } });
   revalidatePath("/applications");
   revalidatePath(`/applications/${id}`);
@@ -169,6 +177,7 @@ export async function unarchiveApplication(id: string) {
 }
 
 export async function bulkArchiveApplications(ids: string[]) {
+  const db = await userDb();
   if (ids.length === 0) return;
   await db.application.updateMany({ where: { id: { in: ids } }, data: { archived: true } });
   revalidatePath("/applications");
@@ -178,6 +187,7 @@ export async function bulkArchiveApplications(ids: string[]) {
 }
 
 export async function deleteApplication(id: string) {
+  const db = await userDb();
   await db.application.delete({ where: { id } });
   revalidatePath("/applications");
   revalidatePath("/pipeline");
@@ -186,6 +196,7 @@ export async function deleteApplication(id: string) {
 }
 
 export async function bulkDeleteApplications(ids: string[]) {
+  const db = await userDb();
   if (ids.length === 0) return;
   await db.application.deleteMany({ where: { id: { in: ids } } });
   revalidatePath("/applications");
@@ -195,6 +206,7 @@ export async function bulkDeleteApplications(ids: string[]) {
 }
 
 export async function bulkUpdateApplicationStatus(ids: string[], status: string) {
+  const db = await userDb();
   if (ids.length === 0) return;
   const parsedStatus = applicationSchema.shape.status.parse(status);
   const existing = await db.application.findMany({ where: { id: { in: ids } } });

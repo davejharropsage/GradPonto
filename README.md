@@ -1,10 +1,10 @@
-# PlacementPilot
+# GradPonto
 
-A locally hosted, self-contained tool for tracking university placement / graduate job applications: log opportunities, tailor a CV and cover letter per job (optionally with AI help), export a finished PDF, and track each application's status from first interest through to an offer — on a dashboard, a card grid, or a drag-and-drop kanban pipeline.
+A web app for UK graduates to track placement / graduate job applications: log opportunities, tailor a CV and cover letter per job (optionally with AI help), export a finished PDF, and track each application's status from first interest through to an offer, on a dashboard, a card grid, or a drag-and-drop kanban pipeline.
 
-Runs entirely on your own machine. No account, no cloud database, and no internet connection required after the initial `npm install` — except for the optional AI features (job analysis, CV matching, document tailoring), which call the Anthropic API.
+People sign in with their email (a one-time code, no password), register with their name and university, and only ever see their own data. See [Accounts & sign-in](#accounts--sign-in).
 
-There's also a separate public-style **landing page** at `/landing` (Monday.com-style marketing page) with a sign-up form for a Free/Pro plan choice — see [AI features & sign-up](#ai-features--sign-up) below for what that actually does locally.
+The public marketing page is at `/landing` and its **Get started free** button leads to sign-in.
 
 ## Technology stack
 
@@ -21,13 +21,15 @@ There's also a separate public-style **landing page** at `/landing` (Monday.com-
 
 ```
 prisma/
-  schema.prisma          The data model — Employer, Application, Document, Activity, Profile, Signup
+  schema.prisma          The data model — User, Session, LoginCode, plus Employer, Application, Document, Activity, Goal (each owned by a User)
   migrations/             Auto-generated SQL migrations
   dev.db                  The SQLite database file (gitignored — it's your real data)
 src/
   app/
     layout.tsx             Minimal root layout — theme provider + toast host only
-    landing/                Public marketing page (no sidebar) with the sign-up form
+    landing/                Public marketing page (GradPonto landing page)
+    signin/, welcome/       Sign-in (email + code) and registration (name + university)
+    dev/outbox/             Development-only inbox for emails when SMTP isn't configured
     (app)/                  Route group for every page that gets the sidebar shell
       layout.tsx              Wraps children in <AppShell>
       page.tsx                 Dashboard
@@ -43,7 +45,9 @@ src/
   components/
     ui/                    Generated shadcn/ui primitives — do not hand-edit, re-run the CLI instead
     layout/                Sidebar + header shell, theme toggle, search
-    landing/               Landing-page-only sections (hero, features, pricing, signup)
+    landing/               Landing-page sections and the header with the Get started free button
+    auth/                  Sign-in, code and registration forms
+    brand/                 GradPonto mark and wordmark
     dashboard/, applications/, pipeline/, documents/, analyse-job/, check-cv/, employers/, activities/
                             Feature-specific components
     shared/                Small reusable pieces (PageHeader, EmptyState, Pagination, DeleteButton, LinkButton)
@@ -110,7 +114,7 @@ npx prisma studio
 
 Opens a local GUI at `http://localhost:5555` for browsing and editing rows directly — handy for debugging.
 
-## AI features & sign-up
+## AI features
 
 Three features call Claude, and all three are entirely optional — each degrades gracefully (buttons disable themselves, with a note pointing at this section) if no key is configured:
 
@@ -129,7 +133,38 @@ To enable them:
 
 AI-generated document content is always labeled with an "AI drafted" badge so you remember to review it before using it.
 
-**The `/landing` sign-up form** does *not* call AI or process any payment — it's a local-only sign-up capture (writes a `Signup` row and updates your local `Profile.plan`) that mirrors what a real Free/Pro subscription flow would look like. See [ARCHITECTURE.md](ARCHITECTURE.md) for what wiring up real billing would actually need.
+
+## Accounts & sign-in
+
+There are no passwords. The flow:
+
+1. **Landing page > Get started free** (top right) leads to `/signin`.
+2. Enter an email. A 6-digit code is emailed (valid 10 minutes, single use).
+3. Enter the code. If that email **already has an account**, you're signed straight in. If it's **new**, you continue to `/welcome`.
+4. `/welcome` asks for **name and university**. Completing it creates the registered account, signs you into the app, and sends a confirmation email.
+
+The Google / Microsoft / Apple / ChatGPT buttons on `/signin` are placeholders marked "Soon". Only email works today.
+
+### Setup
+
+Copy `.env.example` to `.env` and set at least `AUTH_SECRET` (random, 32+ characters; the file explains how to generate one) and `APP_URL`. `DATABASE_URL` must still be an absolute path (see ARCHITECTURE.md).
+
+### Email
+
+- **Development (no `SMTP_HOST`)**: emails are not sent. They are saved in `.mail-outbox/` and listed at <http://localhost:3000/dev/outbox>, which is where you read your sign-in code. That page returns 404 in production.
+- **Production**: set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM`. Without SMTP configured in production, sign-in fails loudly rather than pretending to send.
+
+### How data is kept private
+
+Every user-owned table has a `userId`. Application code never uses the raw Prisma client; it gets a client from `userDb()` (`src/lib/auth/user.ts`) that adds `userId` to every query and stamps it on every insert. `src/lib/db.ts` exports the raw client as `prisma` on purpose so any unscoped use is obvious (and `import { db }` no longer compiles). Server actions and route handlers each re-check the session themselves; `src/proxy.ts` only does a quick cookie check and is not the security boundary. Where an action accepts an id that links two records (for example an activity's `applicationId`), it first checks that the id belongs to the signed-in user.
+
+### Before going live
+
+- Set a production `AUTH_SECRET` and a real SMTP provider, and serve over https (`APP_URL=https://...`, which also marks cookies `Secure`).
+- The per-IP flood limiter in `src/lib/auth/rate-limit.ts` is in-memory and per server process; use a shared store (for example Redis) if you run more than one instance.
+- Review and complete the Privacy Policy and Terms (they are drafts with `[bracketed]` placeholders).
+- There is no self-service account deletion yet.
+- Existing databases from the single-user version can't be upgraded in place: the migration adds a required owner to every row. Start from an empty database, or write a one-off script that creates a `User` and assigns the old rows to it.
 
 ## Adding future features
 
@@ -168,16 +203,16 @@ No application code needs to change — all database access goes through Prisma,
 
 ## Local network access (future)
 
-Not configured yet, and **do not expose this to your network as-is** — there's no authentication, so anyone on the network could read your CVs and application history. Before doing that:
+Accounts and per-user data are in place (see [Accounts & sign-in](#accounts--sign-in)), but review [Before going live](#before-going-live) first. Then:
 
-1. Add authentication (e.g. a simple password gate via middleware, or a proper auth library if this grows beyond single-user).
+1. Set the production environment variables.
 2. Run `npm run build && npm run start` (Next.js listens on all interfaces by default with `next start`, or bind explicitly with `next start -H 0.0.0.0`).
 3. Access it from another device on the same network via `http://<your-machine-ip>:3000`.
 
 ## Real subscriptions / billing (future)
 
-The `/account` page's Free/Pro toggle and the landing page's sign-up form are both local-only simulations — no payment processor is connected, and nothing is charged. To make this a real subscription:
+The `/account` page's Free/Pro toggle is a simulation: no payment processor is connected and nothing is charged. To make this a real subscription:
 
 1. Add a payment provider (Stripe is the standard choice) — this needs real API keys and, since this app has no server that's reachable from the internet, either a hosted deployment or a webhook-relay tool (e.g. the Stripe CLI's `listen --forward-to`) for local development.
-2. Add real authentication (see "Local network access" above) — a subscription needs to be tied to a real signed-in user, not the single local `Profile` row this app currently has.
-3. Replace `setPlan`/`createSignup` in `lib/actions/profile.ts` / `lib/actions/signup.ts` with calls into the payment provider's checkout flow, and update `Profile.plan` from its webhook events rather than directly from a button click.
+2. Subscriptions attach to the signed-in `User` (`User.plan`).
+3. Replace `setPlan` in `lib/actions/profile.ts` with a call into the payment provider's checkout flow, and update `User.plan` from its webhook events rather than directly from a button click.

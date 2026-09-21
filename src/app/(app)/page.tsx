@@ -15,13 +15,15 @@ import {
   getUpcomingReminders,
 } from "@/lib/data/dashboard";
 import { getProfile, getGreeting } from "@/lib/data/profile";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/auth/user";
 import { formatDate } from "@/lib/format";
 
 export default async function DashboardPage() {
   const startOfWeek = new Date();
   startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
+
+  const db = await userDb();
 
   const [
     stats,

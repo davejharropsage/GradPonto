@@ -1,39 +1,46 @@
 import type { Metadata } from "next";
-import { LandingNav } from "@/components/landing/landing-nav";
-import { Hero } from "@/components/landing/hero";
-import { HowItWorks } from "@/components/landing/how-it-works";
-import { FeatureGrid } from "@/components/landing/feature-grid";
-import { CvSpotlight } from "@/components/landing/cv-spotlight";
-import { PricingSignup } from "@/components/landing/pricing-signup";
-import { FaqSection } from "@/components/landing/faq-section";
-import { LandingFooter } from "@/components/landing/landing-footer";
-import { ScrollProgressBar } from "@/components/landing/scroll-progress-bar";
-import { CookieBanner } from "@/components/landing/cookie-banner";
-import { FloatingContactButton } from "@/components/landing/floating-contact-button";
-import { UtmCapture } from "@/components/landing/utm-capture";
+import "./landing.css";
+import { FeatureTabs } from "@/components/landing/feature-tabs";
+import { LandingCta, LandingFooter, LandingHeader, SvgDefs } from "@/components/landing/landing-chrome";
+import {
+  Bento,
+  Faq,
+  FeaturesHeading,
+  featurePanels,
+  Hero,
+  HowItWorks,
+  WhyGradPonto,
+} from "@/components/landing/landing-sections";
+import { signedInDestination } from "@/lib/auth/user";
 
 export const metadata: Metadata = {
-  title: "PlacementPilot: Track your placement search",
-  description: "Track applications, tailor your CV with AI, and never miss a deadline.",
+  title: { absolute: "GradPonto: find, apply and track UK placements" },
+  description:
+    "GradPonto helps UK graduates find placements, internships and apprenticeships, apply on the employer's site, and track every application in one place.",
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const signedIn = (await signedInDestination()) !== null;
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <UtmCapture />
-      <ScrollProgressBar />
-      <LandingNav />
-      <main id="main-content" className="flex-1">
+    <div className="gp-landing">
+      <SvgDefs />
+      <LandingHeader signedIn={signedIn} />
+      <main id="main-content">
         <Hero />
+        <section className="section" id="features">
+          <div className="wrap">
+            <FeaturesHeading />
+            <FeatureTabs panels={featurePanels()} />
+          </div>
+        </section>
+        <Bento />
         <HowItWorks />
-        <FeatureGrid />
-        <CvSpotlight />
-        <FaqSection />
-        <PricingSignup />
+        <WhyGradPonto />
+        <Faq />
+        <LandingCta signedIn={signedIn} />
       </main>
       <LandingFooter />
-      <FloatingContactButton />
-      <CookieBanner />
     </div>
   );
 }
