@@ -8,6 +8,7 @@ import {
   Building2,
   BarChart3,
   Target,
+  Telescope,
 } from "lucide-react";
 
 // The sidebar is grouped so it scans quickly: Dashboard on its own, then labelled sections.
@@ -20,6 +21,7 @@ export const navSections = [
   {
     label: "Track",
     links: [
+      { href: "/find", label: "Find placements", icon: Telescope },
       { href: "/applications", label: "Applications", icon: Briefcase },
       { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
       { href: "/deadlines", label: "Deadlines", icon: CalendarClock },

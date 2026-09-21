@@ -11,7 +11,7 @@ export default async function PipelinePage() {
     <div>
       <PageHeader
         title="Pipeline"
-        description="Drag applications between stages to update their status."
+        description="Pick up a card and drop it in another stage to update its status. On a keyboard, press Space on a card, use the arrow keys, then Space again."
         actions={
           <LinkButton href="/applications/new">
             <Plus className="h-4 w-4" />

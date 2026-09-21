@@ -14,9 +14,8 @@ async function clientKey(): Promise<string> {
   return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
 }
 
-/** Returns true if this caller has exceeded `limit` calls to `bucket` within `windowMs`. */
-export async function isRateLimited(bucket: string, limit: number, windowMs: number): Promise<boolean> {
-  const key = `${bucket}:${await clientKey()}`;
+/** Returns true if `key` has exceeded `limit` calls within `windowMs`. Counts this call. */
+export function isRateLimitedKey(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
   const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
   recent.push(now);
@@ -26,4 +25,9 @@ export async function isRateLimited(bucket: string, limit: number, windowMs: num
     for (const [k, times] of hits) if (times.every((t) => now - t >= windowMs)) hits.delete(k);
   }
   return recent.length > limit;
+}
+
+/** Returns true if this caller (by network address) has exceeded `limit` calls to `bucket` within `windowMs`. */
+export async function isRateLimited(bucket: string, limit: number, windowMs: number): Promise<boolean> {
+  return isRateLimitedKey(`${bucket}:${await clientKey()}`, limit, windowMs);
 }

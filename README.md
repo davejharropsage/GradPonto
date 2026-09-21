@@ -133,6 +133,29 @@ To enable them:
 
 AI-generated document content is always labeled with an "AI drafted" badge so you remember to review it before using it.
 
+## Find placements (Adzuna job search)
+
+**Find placements** (top of the Track group in the left menu) searches live UK adverts through the [Adzuna API](https://developer.adzuna.com/) and lets you add any result to your pipeline with one click ("Add to pipeline" creates an *Interested* application with the link, location, salary and a summary; adverts already added show "In your pipeline").
+
+Setup: register at <https://developer.adzuna.com/> and add to `.env`:
+
+```
+ADZUNA_APP_ID=...
+ADZUNA_APP_KEY=...
+```
+
+How it behaves (ported from the original Python search harness):
+
+- One request per search: all your keywords go to Adzuna as `what_or`, then results are de-duplicated and ranked. Student-friendly roles (placements, internships, graduate schemes) are boosted, staff roles ("Placement Officer", "Head of…") are pushed down, and fee-charging "training courses" are hidden behind a visible "Show it" link.
+- Adzuna's free quota is shared by everyone using the app (25/min, 250/day). Results are cached for 15 minutes, each user gets 12 fresh searches an hour, and there is a global per-minute/day budget. Cached searches keep working when a limit is hit.
+- Adzuna's terms require a "Jobs by Adzuna" credit on every advert. Save Adzuna's official logo as `public/adzuna-logo.svg` (or `.png`) and it is used automatically; otherwise a linked text credit is shown. Adzuna's *predicted* salaries are never displayed (they need a separate credit).
+- The API key stays on the server and is never included in pages or error messages.
+
+Pure logic lives in `src/lib/jobs/listing.ts` and is covered by `npm test`.
+
+## Pipeline: drag and drop
+
+On **Pipeline**, pick a card up and drop it in another column to change its status (the change is saved, logged in the application's timeline, and shown immediately; if saving fails it jumps back and you are told). Mouse: drag. Touch: press and hold, then drag. Keyboard: focus a card, Space to pick up, Left/Right arrows to change column, Space to drop, Escape to cancel. A plain click on the company name still opens the application.
 
 ## Accounts & sign-in
 
