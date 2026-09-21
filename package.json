@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "mail:test": "node --env-file=.env scripts/send-test-email.mjs"
+    "mail:test": "node --env-file=.env scripts/send-test-email.mjs",
+    "emails:export": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/export-email-templates.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en-GB" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Welcome to GradPonto</title>
+<style>
+  @media only screen and (max-width: 480px) {
+    .gp-card { padding: 28px 20px !important; }
+    .gp-code { font-size: 30px !important; letter-spacing: 6px !important; }
+    .gp-h1 { font-size: 26px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#f5f7fb;-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:#f5f7fb;">Your account is ready, {{ name }}. There's no password: we email you a code each time you sign in.&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f7fb;">
+  <tr><td align="center" style="padding:32px 12px;">
+    <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
+
+      <tr><td style="padding:0 4px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td width="36" height="36" align="center" valign="middle" bgcolor="#202128" style="width:36px;height:36px;border-radius:10px;background:#202128;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:36px;font-weight:900;color:#79c5cd;">P</td>
+          <td style="padding-left:10px;font-family:'Arial Narrow',Arial,Helvetica,sans-serif;font-size:26px;line-height:36px;font-weight:900;letter-spacing:-0.3px;color:#202128;">GradPonto</td>
+        </tr></table>
+      </td></tr>
+
+      <tr><td>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:20px;overflow:hidden;">
+          <tr><td height="5" bgcolor="#79c5cd" style="height:5px;font-size:0;line-height:0;background:#79c5cd;background-image:linear-gradient(90deg,#86c159,#79c5cd,#5e84e2);">&nbsp;</td></tr>
+          <tr><td class="gp-card" style="padding:36px 32px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#202128;">
+            <p style="margin:0 0 10px;font-size:12px;line-height:1.4;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#476adb;">Account created</p>
+            <h1 class="gp-h1" style="margin:0 0 12px;font-family:'Arial Narrow',Arial,Helvetica,sans-serif;font-size:30px;line-height:1.15;font-weight:900;color:#202128;">Welcome, {{ name }}</h1>
+            <p style="margin:0 0 22px;color:#62646d;">Your GradPonto account is ready. Here&#39;s what we have on file:</p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f7fb;border-radius:14px;">
+              <tr>
+                <td width="38%" valign="top" style="padding:18px 20px 6px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#62646d;">Name</td>
+                <td valign="top" style="padding:18px 20px 6px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;font-weight:700;color:#202128;word-break:break-word;">{{ name }}</td>
+              </tr>
+              <tr>
+                <td width="38%" valign="top" style="padding:6px 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#62646d;">University</td>
+                <td valign="top" style="padding:6px 20px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;font-weight:700;color:#202128;word-break:break-word;">{{ university }}</td>
+              </tr>
+              <tr>
+                <td width="38%" valign="top" style="padding:6px 20px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#62646d;">Sign-in email</td>
+                <td valign="top" style="padding:6px 20px 18px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;font-weight:700;color:#202128;word-break:break-word;">{{ email }}</td>
+              </tr>
+            </table>
+            <p style="margin:26px 0 6px;font-weight:700;">How you sign in</p>
+            <p style="margin:0 0 26px;color:#62646d;">There&#39;s no password to remember. Enter your email address on the sign-in page and we&#39;ll email you a one-time code each time.</p>
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td bgcolor="#202128" style="border-radius:10px;background:#202128;"><a href="{{ app_url }}/" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">Open GradPonto</a></td>
+            </tr></table>
+            <p style="margin:26px 0 0;padding-top:18px;border-top:1px solid #e1e6ef;font-size:14px;color:#62646d;">Didn&#39;t create this account? You can ignore this email. Nobody can sign in without a code sent to this address.</p>
+          </td></tr>
+        </table>
+      </td></tr>
+
+      <tr><td style="padding:20px 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#62646d;">
+        You're receiving this because this email address was used to create a GradPonto account.<br>
+        &copy; GradPonto. Find, apply and track UK placements, internships and apprenticeships.
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

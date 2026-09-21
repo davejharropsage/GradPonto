@@ -1,0 +1,13 @@
+Hi {{ name }},
+
+Your GradPonto account has been created.
+
+  Name:        {{ name }}
+  University:  {{ university }}
+  Sign-in email: {{ email }}
+
+How you sign in: there is no password. Go to {{ app_url }}/signin, enter this email address, and we'll send you a one-time code.
+
+Open GradPonto: {{ app_url }}/
+
+If you didn't create this account, you can ignore this email; nobody can sign in without a code sent to this address.
