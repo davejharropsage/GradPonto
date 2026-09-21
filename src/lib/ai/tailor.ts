@@ -1,4 +1,4 @@
-import { getClient } from "./client";
+import { generateText } from "./client";
 
 const KIND_INSTRUCTIONS: Record<string, string> = {
   CV: "Adjust emphasis, ordering, and wording of the CV to highlight the experience most relevant to this job. Do not invent experience that isn't in the base CV. Keep the same overall structure and length.",
@@ -12,32 +12,21 @@ export async function tailorDocument(params: {
   employerName?: string | null;
   jobDescription?: string | null;
 }) {
-  const client = getClient();
-
-  const message = await client.messages.create({
-    model: "claude-sonnet-5",
-    max_tokens: 2000,
-    messages: [
-      {
-        role: "user",
-        content: [
-          `You are helping a student tailor their ${params.kind === "CV" ? "CV" : "cover letter"} for a specific job application.`,
-          KIND_INSTRUCTIONS[params.kind],
-          "",
-          `Job title: ${params.jobTitle}`,
-          params.employerName ? `Employer: ${params.employerName}` : "",
-          params.jobDescription ? `Job description:\n${params.jobDescription}` : "",
-          "",
-          `Base ${params.kind === "CV" ? "CV" : "cover letter"}:\n${params.baseContent}`,
-          "",
-          "Return only the tailored document text, no commentary.",
-        ]
-          .filter(Boolean)
-          .join("\n"),
-      },
-    ],
-  });
-
-  const textBlock = message.content.find((block) => block.type === "text");
-  return textBlock?.type === "text" ? textBlock.text : "";
+  return generateText(
+    [
+      `You are helping a student tailor their ${params.kind === "CV" ? "CV" : "cover letter"} for a specific job application.`,
+      KIND_INSTRUCTIONS[params.kind],
+      "",
+      `Job title: ${params.jobTitle}`,
+      params.employerName ? `Employer: ${params.employerName}` : "",
+      params.jobDescription ? `Job description:\n${params.jobDescription}` : "",
+      "",
+      `Base ${params.kind === "CV" ? "CV" : "cover letter"}:\n${params.baseContent}`,
+      "",
+      "Return only the tailored document text, no commentary.",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    { maxTokens: 2000 }
+  );
 }

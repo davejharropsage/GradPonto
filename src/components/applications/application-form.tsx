@@ -89,7 +89,7 @@ export function ApplicationForm({
           if (fields.deadline) setDeadline(fields.deadline);
           toast.success("Filled in from the job listing. Review before saving.");
         } else {
-          toast.success("Pulled the job description. Add an ANTHROPIC_API_KEY to auto-fill the other fields too.");
+          toast.success("Pulled the job description. Add an GEMINI_API_KEY to auto-fill the other fields too.");
         }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Couldn't read that URL");
@@ -127,7 +127,7 @@ export function ApplicationForm({
           <p className="mt-1.5 text-xs text-muted-foreground">
             {aiAvailable
               ? "Copies the job description and fills in the title, company, location, salary, and deadline below."
-              : "Copies the job description in. Add an ANTHROPIC_API_KEY to also auto-fill the fields below."}
+              : "Copies the job description in. Add an GEMINI_API_KEY to also auto-fill the fields below."}
           </p>
         </CardContent>
       </Card>

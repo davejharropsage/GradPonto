@@ -72,8 +72,8 @@ export default function PrivacyPage() {
         <h2 className="text-base font-semibold">AI features</h2>
         <p className="mt-2 text-muted-foreground">
           Where AI features are switched on, using one (job description analysis, CV matching or document tailoring)
-          sends the specific text involved (a job description, your CV or a draft document) to Anthropic&apos;s API to
-          produce a response. That request is governed by Anthropic&apos;s own privacy policy. No other data from your
+          sends the specific text involved (a job description, your CV or a draft document) to an AI service (Google&apos;s Gemini API) to
+          produce a response. That request is governed by that provider&apos;s own privacy policy. No other data from your
           account is included. If the feature is off, nothing is sent.
         </p>
       </section>

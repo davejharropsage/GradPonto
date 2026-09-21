@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { userDb } from "@/lib/auth/user";
 import { documentSchema } from "@/lib/validations";
+import { requireAiAllowance } from "@/lib/ai/limit";
 import { tailorDocument } from "@/lib/ai/tailor";
 
 export async function createBaseDocument(kind: "CV" | "COVER_LETTER", formData: FormData) {
@@ -53,6 +54,7 @@ export async function duplicateDocumentForApplication(baseDocumentId: string, ap
 }
 
 export async function generateTailoredDocument(baseDocumentId: string, applicationId: string) {
+  await requireAiAllowance();
   const db = await userDb();
   const [base, application] = await Promise.all([
     db.document.findUniqueOrThrow({ where: { id: baseDocumentId } }),

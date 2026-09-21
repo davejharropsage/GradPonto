@@ -13,7 +13,7 @@ The public marketing page is at `/landing` and its **Get started free** button l
 - **ORM:** Prisma 6 (pinned to `6.19.3`, classic engine — see [ARCHITECTURE.md](ARCHITECTURE.md) for why)
 - **Styling:** Tailwind CSS v4, dark mode via `next-themes`
 - **UI components:** shadcn/ui (built on `@base-ui/react`)
-- **AI:** `@anthropic-ai/sdk`, optional — the app works fully without an API key, with features simply disabled
+- **AI:** Google Gemini (free key from AI Studio) via plain `fetch`; `@anthropic-ai/sdk` kept as an optional fallback. The app works fully without a key, with the AI features simply disabled
 - **PDF export:** `@react-pdf/renderer`
 - **Package manager:** npm
 
@@ -55,7 +55,7 @@ src/
     db.ts                  Prisma client singleton
     validations.ts          zod schemas for every form
     labels.ts                Enum → human label / colour maps, shared between server and client
-    ai/                      client.ts (shared Anthropic client + JSON helper), tailor.ts, analyze-job.ts, match-cv.ts
+    ai/                      client.ts (generateText: Gemini, or Claude as fallback; JSON helper), limit.ts (per-user hourly allowance), tailor.ts, analyze-job.ts, match-cv.ts
     pdf/render.ts             React-PDF template + render-to-buffer helper
     data/                    Read-only query functions, one file per entity
     actions/                 `"use server"` mutations, one file per entity
@@ -116,20 +116,22 @@ Opens a local GUI at `http://localhost:5555` for browsing and editing rows direc
 
 ## AI features
 
-Three features call Claude, and all three are entirely optional — each degrades gracefully (buttons disable themselves, with a note pointing at this section) if no key is configured:
+Three features use AI, and all three are entirely optional — each degrades gracefully (buttons disable themselves, with a note pointing at this section) if no key is configured:
 
 - **Generate with AI** (on a document, in an application) — drafts a tailored CV or cover letter from your base document plus the job description.
-- **Analyse a Job** — paste a job posting (or a URL, via "Auto-fill", which does a plain server-side fetch-and-strip-HTML first) and Claude extracts title, company, location, salary, and deadline, which pre-fill a new application.
+- **Analyse a Job** — paste a job posting (or a URL, via "Auto-fill", which does a plain server-side fetch-and-strip-HTML first) and the AI extracts title, company, location, salary, and deadline, which pre-fill a new application.
 - **Check My CV** — compares a saved CV against a specific application's job description and returns a match score, strengths, gaps, and concrete suggestions.
 
-To enable them:
+They use Google's Gemini API. To enable them:
 
-1. Get an API key at <https://console.anthropic.com/settings/keys>.
-2. Add it to `.env`:
+1. Create a free key in Google AI Studio: <https://aistudio.google.com/apikey> ([guide](https://aistudio.google.com/docs/get-started)).
+2. Add it to `.env` (which is git-ignored — never commit a key):
    ```
-   ANTHROPIC_API_KEY=sk-ant-...
+   GEMINI_API_KEY=...
    ```
 3. Restart the dev server.
+
+The model defaults to `gemini-3.8-flash`; set `GEMINI_MODEL` to change it. If `GEMINI_API_KEY` is empty but `ANTHROPIC_API_KEY` is set, Claude is used instead. The free tier has a small shared allowance, so each person is limited to 30 AI requests an hour (`src/lib/ai/limit.ts`), and a friendly message is shown if Google's limit is reached.
 
 AI-generated document content is always labeled with an "AI drafted" badge so you remember to review it before using it.
 
