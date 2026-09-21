@@ -34,10 +34,20 @@ export async function sendMail(mail: Mail): Promise<void> {
     if (!from) throw new Error("MAIL_FROM must be set when SMTP_HOST is set (e.g. \"GradPonto <no-reply@yourdomain>\").");
 
     const port = Number(process.env.SMTP_PORT || 587);
+    const secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : port === 465;
+    const isLocal = ["localhost", "127.0.0.1", "::1"].includes(process.env.SMTP_HOST ?? "");
+    // Keep this in step with scripts/send-test-email.mjs, which builds the same connection.
     const transport = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port,
-      secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : port === 465,
+      secure,
+      // On the STARTTLS ports (usually 587) never fall back to plain text: that would send the
+      // SMTP password unencrypted if the server didn't offer TLS.
+      requireTLS: !secure && !isLocal,
+      // Fail fast: a wrong host must not leave the sign-in form spinning for minutes.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
       auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
     });
     await transport.sendMail({ from, to: mail.to, subject: mail.subject, text: mail.text, html: mail.html });

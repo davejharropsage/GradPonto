@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "mail:test": "node --env-file=.env scripts/send-test-email.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",

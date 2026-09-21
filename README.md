@@ -153,6 +153,7 @@ Copy `.env.example` to `.env` and set at least `AUTH_SECRET` (random, 32+ charac
 
 - **Development (no `SMTP_HOST`)**: emails are not sent. They are saved in `.mail-outbox/` and listed at <http://localhost:3000/dev/outbox>, which is where you read your sign-in code. That page returns 404 in production.
 - **Production**: set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM`. Without SMTP configured in production, sign-in fails loudly rather than pretending to send.
+- **Check it works**: after filling in the SMTP settings run `npm run mail:test -- you@example.com`. It connects, logs in and sends one real email, and explains the likely cause if anything is wrong. Restart the dev server afterwards so it picks up `.env`. `.env.example` has a quick Gmail recipe for testing.
 
 ### How data is kept private
 
