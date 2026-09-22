@@ -13,7 +13,7 @@ export async function getDocument(id: string) {
   return db.document.findUnique({ where: { id } });
 }
 
-// Every CV on file (base + tailored per-application copies), for the "Check My CV" picker.
+// Every CV on file (base + tailored per-application copies), for the Application Reviewer's picker.
 export async function getAllCvDocuments() {
   const db = await userDb();
   return db.document.findMany({

@@ -16,6 +16,7 @@ import { PrintButton } from "@/components/shared/print-button";
 import { getApplication } from "@/lib/data/applications";
 import { getBaseDocuments } from "@/lib/data/documents";
 import { deleteApplication } from "@/lib/actions/applications";
+import { isAiConfigured } from "@/lib/ai/client";
 import { applicationStatusLabels, applicationStatusColors, priorityLabels, priorityColors } from "@/lib/labels";
 import { formatDate } from "@/lib/format";
 
@@ -28,7 +29,7 @@ export default async function ApplicationDetailPage({
   const [application, baseDocuments] = await Promise.all([getApplication(id), getBaseDocuments()]);
   if (!application) notFound();
 
-  const aiAvailable = Boolean(process.env.ANTHROPIC_API_KEY);
+  const aiAvailable = isAiConfigured();
 
   return (
     <div>
@@ -40,7 +41,7 @@ export default async function ApplicationDetailPage({
             <PrintButton />
             <LinkButton href={`/check-cv?applicationId=${application.id}`} variant="outline">
               <FileCheck2 className="h-4 w-4" />
-              Check My CV
+              Application Reviewer
             </LinkButton>
             <LinkButton href={`/applications/${application.id}/edit`} variant="outline">
               <Pencil className="h-4 w-4" />

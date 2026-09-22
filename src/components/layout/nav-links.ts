@@ -33,7 +33,7 @@ export const navSections = [
     label: "Prepare",
     links: [
       { href: "/analyse-job", label: "Analyse a Job", icon: Sparkles },
-      { href: "/check-cv", label: "Check My CV", icon: FileCheck2 },
+      { href: "/check-cv", label: "Application Reviewer", icon: FileCheck2 },
     ],
   },
 ] as const;

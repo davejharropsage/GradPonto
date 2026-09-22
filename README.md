@@ -37,9 +37,9 @@ src/
       pipeline/                 Kanban board, drag-and-drop between statuses
       deadlines/                 Grouped: overdue / due within 30 days / later
       analyse-job/                Paste a job posting (or a URL) → AI-extracted fields → pre-filled application
-      check-cv/                    Match a saved CV against a specific application's job description
+      check-cv/                    Application Reviewer — tabbed CV/cover-letter tools, mode kept in ?mode=
       employers/                    List, create, edit, detail ("Companies" in the sidebar)
-      documents/                     Manage your base CV and base cover letter
+      documents/                     Manage named CV and cover-letter versions (upload a file or paste text)
       account/                        Local profile name + Free/Pro plan toggle
     api/documents/[id]/pdf       Route handler that renders a Document to a downloadable PDF
   components/
@@ -120,7 +120,7 @@ Three features use AI, and all three are entirely optional — each degrades gra
 
 - **Generate with AI** (on a document, in an application) — drafts a tailored CV or cover letter from your base document plus the job description.
 - **Analyse a Job** — paste a job posting (or a URL, via "Auto-fill", which does a plain server-side fetch-and-strip-HTML first) and the AI extracts title, company, location, salary, and deadline, which pre-fill a new application.
-- **Check My CV** — compares a saved CV against a specific application's job description and returns a match score, strengths, gaps, and concrete suggestions.
+- **Application Reviewer** (`/check-cv`, formerly "Check My CV") — a tabbed page for CV/cover-letter tools. Today it has one working tab, **Job Match**, which compares a saved CV against a specific application's job description and returns a match score, strengths, gaps, and concrete suggestions. Health Check, ATS Keywords, and Cover Letter are reserved tabs, shown as "coming soon" until they ship.
 
 They use Google's Gemini API. To enable them:
 

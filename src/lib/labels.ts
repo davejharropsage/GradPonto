@@ -90,6 +90,18 @@ export const documentKindLabels: Record<string, string> = {
   COVER_LETTER: "Cover Letter",
 };
 
+// The Application Reviewer's modes. "match" (job-specific) is the default, and the one that
+// existed before the others — a search-param value that doesn't match one of these falls back to it.
+export const reviewModes = ["match", "health", "ats", "cover"] as const;
+export type ReviewMode = (typeof reviewModes)[number];
+
+export const reviewModeLabels: Record<ReviewMode, string> = {
+  match: "Job Match",
+  health: "Health Check",
+  ats: "ATS Keywords",
+  cover: "Cover Letter",
+};
+
 // The "needs attention" action prompt shown on the dashboard for a given status.
 export const nextActionLabels: Record<string, string> = {
   INTERESTED: "Start application",

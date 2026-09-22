@@ -31,7 +31,7 @@ const quickActions = [
   { label: "Pipeline", href: "/pipeline", icon: KanbanSquare },
   { label: "Deadlines", href: "/deadlines", icon: CalendarClock },
   { label: "Analyse a Job", href: "/analyse-job", icon: Sparkles },
-  { label: "Check My CV", href: "/check-cv", icon: FileCheck2 },
+  { label: "Application Reviewer", href: "/check-cv", icon: FileCheck2 },
   { label: "Companies", href: "/employers", icon: Building2 },
   { label: "Goals", href: "/goals", icon: Target },
   { label: "New Application", href: "/applications/new", icon: Plus },
