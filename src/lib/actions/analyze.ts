@@ -2,6 +2,7 @@
 
 import { analyzeJobDescription, type JobAnalysis } from "@/lib/ai/analyze-job";
 import { matchCvToJob, type CvMatch } from "@/lib/ai/match-cv";
+import { reviewCvGenerally, type CvHealthCheck } from "@/lib/ai/review-cv";
 import { requireAiAllowance } from "@/lib/ai/limit";
 import { requireRegisteredUser, userDb } from "@/lib/auth/user";
 import { fetchPublicPage } from "@/lib/net/safe-fetch";
@@ -42,4 +43,10 @@ export async function matchCv(params: { cvContent: string; applicationId: string
     throw new Error("This application has no job description saved to match against");
   }
   return matchCvToJob(params.cvContent, application.description);
+}
+
+export async function reviewCvHealth(cvContent: string): Promise<CvHealthCheck> {
+  await requireAiAllowance();
+  if (!cvContent.trim()) throw new Error("Add a CV first");
+  return reviewCvGenerally(cvContent);
 }

@@ -7,10 +7,14 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
-// Tried in order when the first model is busy (the free tier often returns "high demand" for the newest one).
-const FALLBACK_GEMINI_MODELS = ["gemini-3.7-flash", "gemini-2.5-flash"];
+// Tried in order when the first model is busy (the free tier often returns "high demand" for the newest one)
+// or has been retired (Google occasionally 404s an older model name and points at a newer one).
+const FALLBACK_GEMINI_MODELS = ["gemini-3.7-flash", "gemini-3.6-flash"];
 const REQUEST_TIMEOUT_MS = 60_000;
 const ROUNDS = 2;
+// Reasons to try the next model rather than give up: busy, rate-limited, or a model name Google
+// has retired (404) — none of these are the user's fault, and another model may still work.
+const RETRY_NEXT_MODEL_STATUSES = new Set([404, 429, 503]);
 
 export class AiNotConfiguredError extends Error {
   constructor() {
@@ -76,10 +80,9 @@ async function generateWithGemini(prompt: string, json: boolean, maxTokens: numb
       } catch {
         throw new AiRequestError("The AI service didn't respond. Please try again in a moment.");
       }
-      // "Busy" (503) or briefly rate-limited (429): move on to the next model.
-      if (response.status !== 429 && response.status !== 503) break;
+      if (!RETRY_NEXT_MODEL_STATUSES.has(response.status)) break;
     }
-    if (response && response.status !== 429 && response.status !== 503) break;
+    if (response && !RETRY_NEXT_MODEL_STATUSES.has(response.status)) break;
     if (round < ROUNDS - 1) await new Promise((resolve) => setTimeout(resolve, 1500));
   }
 

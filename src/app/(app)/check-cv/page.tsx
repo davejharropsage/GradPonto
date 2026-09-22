@@ -1,7 +1,8 @@
-import { FileSearch, ListChecks, Mail } from "lucide-react";
+import { ListChecks, Mail } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { ReviewerTabs } from "@/components/check-cv/reviewer-tabs";
 import { JobMatchTab } from "@/components/check-cv/job-match-tab";
+import { HealthCheckTab } from "@/components/check-cv/health-check-tab";
 import { ComingSoonTab } from "@/components/check-cv/coming-soon-tab";
 import { getAllCvDocuments } from "@/lib/data/documents";
 import { getApplicationOptions } from "@/lib/data/applications";
@@ -42,13 +43,7 @@ export default async function ApplicationReviewerPage({
               initialApplicationId={params.applicationId}
             />
           }
-          health={
-            <ComingSoonTab
-              icon={FileSearch}
-              title="Health Check"
-              description="A general review of your CV with no job attached — structure, clarity, and common mistakes. Coming next."
-            />
-          }
+          health={<HealthCheckTab cvDocuments={cvDocuments} aiAvailable={aiAvailable} />}
           ats={
             <ComingSoonTab
               icon={ListChecks}
