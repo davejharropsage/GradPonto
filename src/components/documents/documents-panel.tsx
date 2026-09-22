@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { AddDocumentButton } from "./add-document-button";
-import { documentKindLabels } from "@/lib/labels";
+import { documentKindLabels, coverLetterTemplateLabel } from "@/lib/labels";
 import { formatDate } from "@/lib/format";
 import type { Document } from "@/generated/prisma/client";
 
@@ -45,12 +45,17 @@ export function DocumentsPanel({
                   </Link>
                   <p className="text-xs text-muted-foreground">Updated {formatDate(doc.updatedAt)}</p>
                 </div>
-                {doc.generatedByAI && (
-                  <Badge variant="secondary" className="shrink-0 gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    AI drafted
-                  </Badge>
-                )}
+                <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                  {doc.generatedByAI && (
+                    <Badge variant="secondary" className="gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      AI drafted
+                    </Badge>
+                  )}
+                  {coverLetterTemplateLabel(doc.templateKey) && (
+                    <Badge variant="outline">{coverLetterTemplateLabel(doc.templateKey)}</Badge>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

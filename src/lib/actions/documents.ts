@@ -70,7 +70,7 @@ export async function duplicateDocumentForApplication(baseDocumentId: string, ap
   return document;
 }
 
-export async function generateTailoredDocument(baseDocumentId: string, applicationId: string) {
+export async function generateTailoredDocument(baseDocumentId: string, applicationId: string, templateKey?: string) {
   await requireAiAllowance();
   const db = await userDb();
   const [base, application] = await Promise.all([
@@ -84,6 +84,7 @@ export async function generateTailoredDocument(baseDocumentId: string, applicati
     jobTitle: application.title,
     employerName: application.employer?.name,
     jobDescription: application.description,
+    templateKey,
   });
 
   const document = await db.document.create({
@@ -92,6 +93,8 @@ export async function generateTailoredDocument(baseDocumentId: string, applicati
       isBase: false,
       content: tailoredContent,
       generatedByAI: true,
+      // Only meaningful for a cover letter — never recorded against a CV, even if a caller passed one.
+      templateKey: base.kind === "COVER_LETTER" ? (templateKey ?? null) : null,
       applicationId,
     },
   });

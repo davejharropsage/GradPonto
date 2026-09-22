@@ -102,6 +102,50 @@ export const reviewModeLabels: Record<ReviewMode, string> = {
   cover: "Cover Letter",
 };
 
+// A small set of tone starting points for AI-generated cover letters. Kept here (plain data, no
+// imports) rather than in lib/ai/tailor.ts so client components can show the picker/labels without
+// pulling the AI provider code — and the @anthropic-ai/sdk it imports — into the browser bundle.
+export interface CoverLetterTemplate {
+  key: string;
+  label: string;
+  /** Appended to the tailoring prompt to steer tone and style. */
+  instruction: string;
+  /** A one-line example of the opening tone, shown as a preview in the picker. */
+  example: string;
+}
+
+export const coverLetterTemplates: CoverLetterTemplate[] = [
+  {
+    key: "formal",
+    label: "Formal",
+    instruction: "Use a formal, traditional tone: measured language, no contractions, addressed respectfully throughout.",
+    example: "I am writing to apply for the position of Graduate Analyst at Northwind Group.",
+  },
+  {
+    key: "direct",
+    label: "Direct & confident",
+    instruction: "Use a direct, confident tone: short sentences, lead with your strongest qualification, no hedging language.",
+    example: "I've spent the last two years building exactly the skills this role needs.",
+  },
+  {
+    key: "story",
+    label: "Story-led",
+    instruction: "Open with a brief, specific anecdote or moment from the candidate's experience that connects naturally to the role, then build the case from there.",
+    example: "The first time I untangled a messy spreadsheet into a working dashboard, I knew data was where I wanted to be.",
+  },
+  {
+    key: "enthusiastic",
+    label: "Enthusiastic graduate",
+    instruction: "Use a warm, enthusiastic tone appropriate for a graduate just starting out: genuine excitement about the opportunity, without overselling experience the candidate doesn't have.",
+    example: "I've been following your work for a while now, and this graduate role is exactly the next step I've been hoping for.",
+  },
+];
+
+export function coverLetterTemplateLabel(key: string | null | undefined): string | null {
+  if (!key) return null;
+  return coverLetterTemplates.find((t) => t.key === key)?.label ?? null;
+}
+
 // The "needs attention" action prompt shown on the dashboard for a given status.
 export const nextActionLabels: Record<string, string> = {
   INTERESTED: "Start application",

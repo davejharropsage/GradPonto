@@ -1,4 +1,5 @@
 import { generateText } from "./client";
+import { coverLetterTemplates } from "@/lib/labels";
 
 const KIND_INSTRUCTIONS: Record<string, string> = {
   CV: "Adjust emphasis, ordering, and wording of the CV to highlight the experience most relevant to this job. Do not invent experience that isn't in the base CV. Keep the same overall structure and length.",
@@ -11,11 +12,19 @@ export async function tailorDocument(params: {
   jobTitle: string;
   employerName?: string | null;
   jobDescription?: string | null;
+  /** Only meaningful for COVER_LETTER — a key from lib/labels.ts's coverLetterTemplates. */
+  templateKey?: string | null;
 }) {
+  const template =
+    params.kind === "COVER_LETTER" && params.templateKey
+      ? coverLetterTemplates.find((t) => t.key === params.templateKey)
+      : undefined;
+
   return generateText(
     [
       `You are helping a student tailor their ${params.kind === "CV" ? "CV" : "cover letter"} for a specific job application.`,
       KIND_INSTRUCTIONS[params.kind],
+      template ? `Tone: ${template.instruction}` : "",
       "",
       `Job title: ${params.jobTitle}`,
       params.employerName ? `Employer: ${params.employerName}` : "",

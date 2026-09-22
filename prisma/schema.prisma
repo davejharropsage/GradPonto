@@ -179,6 +179,10 @@ model Document {
   name           String?
   content        String // markdown / plain text
   generatedByAI  Boolean      @default(false)
+  // Which cover-letter tone template (lib/labels.ts's coverLetterTemplates) produced this
+  // document, if any — shown as a badge so you know which style you're looking at. Always null
+  // for CVs and for a plain duplicate (only an AI-generated cover letter sets this).
+  templateKey    String?
 
   application   Application? @relation(fields: [applicationId], references: [id])
   applicationId String?

@@ -67,7 +67,8 @@ async function generateWithGemini(prompt: string, json: boolean, maxTokens: numb
 
   const models = [...new Set([process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL, ...FALLBACK_GEMINI_MODELS])];
   let response: Response | undefined;
-  for (let round = 0; round < ROUNDS; round++) {
+
+  outer: for (let round = 0; round < ROUNDS; round++) {
     for (const model of models) {
       try {
         response = await fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
@@ -78,16 +79,21 @@ async function generateWithGemini(prompt: string, json: boolean, maxTokens: numb
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
       } catch {
-        throw new AiRequestError("The AI service didn't respond. Please try again in a moment.");
+        // A network-level failure (timeout, DNS, a dropped connection) rather than an HTTP error —
+        // try the next model instead of giving up immediately; a different endpoint may still answer.
+        response = undefined;
+        continue;
       }
-      if (!RETRY_NEXT_MODEL_STATUSES.has(response.status)) break;
+      if (!RETRY_NEXT_MODEL_STATUSES.has(response.status)) break outer;
     }
-    if (response && !RETRY_NEXT_MODEL_STATUSES.has(response.status)) break;
     if (round < ROUNDS - 1) await new Promise((resolve) => setTimeout(resolve, 1500));
   }
 
-  if (!response || !response.ok) {
-    const status = response?.status;
+  if (!response) {
+    throw new AiRequestError("The AI service didn't respond. Please try again in a moment.");
+  }
+  if (!response.ok) {
+    const status = response.status;
     if (status === 429) throw new AiRequestError("The free AI allowance is used up for the moment. Please try again in a minute.");
     if (status === 400 || status === 401 || status === 403) {
       throw new AiRequestError("The AI service rejected the request. Check that GEMINI_API_KEY in .env is valid.");

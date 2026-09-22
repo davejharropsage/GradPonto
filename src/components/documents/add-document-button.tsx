@@ -23,7 +23,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { duplicateDocumentForApplication, generateTailoredDocument } from "@/lib/actions/documents";
-import { documentKindLabels } from "@/lib/labels";
+import { documentKindLabels, coverLetterTemplates } from "@/lib/labels";
 import type { Document } from "@/generated/prisma/client";
 
 export function AddDocumentButton({
@@ -38,6 +38,7 @@ export function AddDocumentButton({
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<"CV" | "COVER_LETTER">("CV");
   const [baseDocId, setBaseDocId] = useState<string>("");
+  const [templateKey, setTemplateKey] = useState(coverLetterTemplates[0].key);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -53,7 +54,7 @@ export function AddDocumentButton({
       try {
         const doc =
           method === "ai"
-            ? await generateTailoredDocument(baseDoc.id, applicationId)
+            ? await generateTailoredDocument(baseDoc.id, applicationId, kind === "COVER_LETTER" ? templateKey : undefined)
             : await duplicateDocumentForApplication(baseDoc.id, applicationId);
         setOpen(false);
         router.push(`/applications/${applicationId}/documents/${doc.id}`);
@@ -118,6 +119,26 @@ export function AddDocumentButton({
                 {baseForKind.map((d) => (
                   <SelectItem key={d.id} value={d.id}>
                     {d.name || `Untitled ${documentKindLabels[kind]}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {kind === "COVER_LETTER" && (
+          <div className="grid gap-1.5">
+            <Label htmlFor="doc-template">Tone (used when generating with AI)</Label>
+            <Select value={templateKey} onValueChange={(v) => setTemplateKey(v ?? coverLetterTemplates[0].key)}>
+              <SelectTrigger id="doc-template" className="w-full">
+                <SelectValue>
+                  {(value: string) => coverLetterTemplates.find((t) => t.key === value)?.label ?? value}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {coverLetterTemplates.map((t) => (
+                  <SelectItem key={t.key} value={t.key}>
+                    {t.label}
                   </SelectItem>
                 ))}
               </SelectContent>
