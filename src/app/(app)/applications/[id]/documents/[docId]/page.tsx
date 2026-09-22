@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, ListChecks } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentContentEditor } from "@/components/documents/document-content-editor";
 import { ExportPdfButton } from "@/components/documents/export-pdf-button";
 import { DeleteButton } from "@/components/shared/delete-button";
+import { LinkButton } from "@/components/shared/link-button";
 import { getDocument } from "@/lib/data/documents";
 import { deleteDocument } from "@/lib/actions/documents";
 import { documentKindLabels } from "@/lib/labels";
@@ -46,7 +47,14 @@ export default async function ApplicationDocumentPage({
         }
       />
 
-      <DocumentContentEditor documentId={document.id} initialContent={document.content} />
+      {document.isStructured ? (
+        <LinkButton href={`/documents/${document.id}/builder`} variant="outline" size="sm">
+          <ListChecks className="h-4 w-4" />
+          Open CV builder
+        </LinkButton>
+      ) : (
+        <DocumentContentEditor documentId={document.id} initialContent={document.content} />
+      )}
     </div>
   );
 }

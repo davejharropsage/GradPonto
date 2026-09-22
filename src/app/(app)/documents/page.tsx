@@ -1,8 +1,11 @@
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { LinkButton } from "@/components/shared/link-button";
 import { PageHeader } from "@/components/shared/page-header";
 import { DocumentVersionEditor } from "@/components/documents/document-version-editor";
 import { AddVersionForm } from "@/components/documents/add-version-form";
+import { ListChecks } from "lucide-react";
 import { getBaseDocuments } from "@/lib/data/documents";
 import { documentKindLabels } from "@/lib/labels";
 import { formatDate } from "@/lib/format";
@@ -39,14 +42,29 @@ export default async function DocumentsPage() {
                       <AccordionItem key={doc.id} value={doc.id}>
                         <AccordionTrigger>
                           <span className="flex flex-col items-start text-left">
-                            <span>{doc.name || `Untitled ${kindLabel}`}</span>
+                            <span className="flex items-center gap-1.5">
+                              {doc.name || `Untitled ${kindLabel}`}
+                              {doc.isStructured && (
+                                <Badge variant="outline" className="gap-1">
+                                  <ListChecks className="h-3 w-3" />
+                                  Built from sections
+                                </Badge>
+                              )}
+                            </span>
                             <span className="text-xs font-normal text-muted-foreground">
                               Updated {formatDate(doc.updatedAt)}
                             </span>
                           </span>
                         </AccordionTrigger>
                         <AccordionContent>
-                          <DocumentVersionEditor document={doc} kindLabel={kindLabel} />
+                          {doc.isStructured ? (
+                            <LinkButton href={`/documents/${doc.id}/builder`} variant="outline" size="sm">
+                              <ListChecks className="h-4 w-4" />
+                              Open CV builder
+                            </LinkButton>
+                          ) : (
+                            <DocumentVersionEditor document={doc} kindLabel={kindLabel} />
+                          )}
                         </AccordionContent>
                       </AccordionItem>
                     ))}

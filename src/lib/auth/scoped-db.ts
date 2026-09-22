@@ -2,7 +2,17 @@ import "server-only";
 import { prisma } from "@/lib/db";
 
 /** Models whose rows belong to one user (they all have a `userId` column). */
-const OWNED_MODELS = new Set(["Employer", "Application", "Document", "Goal", "Activity"]);
+const OWNED_MODELS = new Set([
+  "Employer",
+  "Application",
+  "Document",
+  "Goal",
+  "Activity",
+  "Experience",
+  "Education",
+  "Skill",
+  "Project",
+]);
 
 // Operations that take a `where` and must only ever match the user's own rows.
 const FILTERED_OPERATIONS = new Set([

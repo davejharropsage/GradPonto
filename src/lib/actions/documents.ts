@@ -18,6 +18,21 @@ export async function createBaseDocument(kind: "CV" | "COVER_LETTER", formData: 
   revalidatePath("/documents");
 }
 
+// The "Build from sections" alternative to createBaseDocument: an empty structured CV, filled
+// in on the builder page rather than pasted as one block. Returns the new document (rather than
+// just revalidating) so the caller can route straight to its builder page.
+export async function createStructuredCv(formData: FormData) {
+  const db = await userDb();
+  const name = documentNameSchema.parse({ name: formData.get("name") }).name;
+
+  const document = await db.document.create({
+    data: { kind: "CV", isBase: true, isStructured: true, name: name || null, content: "" },
+  });
+
+  revalidatePath("/documents");
+  return document;
+}
+
 export async function updateDocumentContent(id: string, formData: FormData) {
   const db = await userDb();
   const parsed = documentSchema.parse({ content: formData.get("content") });
@@ -51,7 +66,10 @@ export async function renameDocument(id: string, formData: FormData) {
 export async function duplicateDocumentForApplication(baseDocumentId: string, applicationId: string) {
   const db = await userDb();
   const [base] = await Promise.all([
-    db.document.findUniqueOrThrow({ where: { id: baseDocumentId } }),
+    db.document.findUniqueOrThrow({
+      where: { id: baseDocumentId },
+      include: { experiences: true, educations: true, skills: true, projects: true },
+    }),
     // The application id comes from the browser: confirm it's this user's own before attaching to it.
     db.application.findUniqueOrThrow({ where: { id: applicationId }, select: { id: true } }),
   ]);
@@ -62,9 +80,55 @@ export async function duplicateDocumentForApplication(baseDocumentId: string, ap
       isBase: false,
       content: base.content,
       generatedByAI: false,
+      isStructured: base.isStructured,
+      headline: base.headline,
+      summary: base.summary,
       applicationId,
     },
   });
+
+  // A structured base CV stays editable in the builder as a tailored copy too — deep-copy its
+  // sections rather than flattening them away. An AI-tailored copy (generateTailoredDocument,
+  // below) never does this: its output is prose the model wrote, not structured fields.
+  if (base.isStructured) {
+    await db.$transaction([
+      ...base.experiences.map((e) =>
+        db.experience.create({
+          data: {
+            documentId: document.id,
+            title: e.title,
+            employer: e.employer,
+            location: e.location,
+            startDate: e.startDate,
+            endDate: e.endDate,
+            current: e.current,
+            bullets: e.bullets,
+            order: e.order,
+          },
+        })
+      ),
+      ...base.educations.map((e) =>
+        db.education.create({
+          data: {
+            documentId: document.id,
+            institution: e.institution,
+            qualification: e.qualification,
+            field: e.field,
+            startDate: e.startDate,
+            endDate: e.endDate,
+            grade: e.grade,
+            order: e.order,
+          },
+        })
+      ),
+      ...base.skills.map((s) => db.skill.create({ data: { documentId: document.id, name: s.name, order: s.order } })),
+      ...base.projects.map((p) =>
+        db.project.create({
+          data: { documentId: document.id, name: p.name, description: p.description, link: p.link, order: p.order },
+        })
+      ),
+    ]);
+  }
 
   revalidatePath(`/applications/${applicationId}`);
   return document;

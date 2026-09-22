@@ -72,6 +72,10 @@ model User {
   documents    Document[]
   goals        Goal[]
   activities   Activity[]
+  experiences  Experience[]
+  educations   Education[]
+  skills       Skill[]
+  projects     Project[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -184,6 +188,15 @@ model Document {
   // for CVs and for a plain duplicate (only an AI-generated cover letter sets this).
   templateKey    String?
 
+  // A CV built section-by-section (see the Experience/Education/Skill/Project models below)
+  // rather than pasted/uploaded as one block. `content` is still the source of truth for
+  // everything downstream (AI review, PDF export, tailoring) — it's re-derived from the
+  // structured rows on every builder save (lib/cv/serialize.ts), so nothing else in the app
+  // ever needs to know a CV was authored this way. headline/summary sit above the sections.
+  isStructured Boolean @default(false)
+  headline     String?
+  summary      String?
+
   application   Application? @relation(fields: [applicationId], references: [id])
   applicationId String?
 
@@ -193,12 +206,106 @@ model Document {
   // the scoped client fails the foreign-key check instead of creating misfiled data.
   userId String @default("")
 
+  experiences Experience[]
+  educations  Education[]
+  skills      Skill[]
+  projects    Project[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([applicationId])
   @@index([kind])
+}
+
+// One CV section each, owned by a structured Document (Document.isStructured). Every one of
+// these carries its own `userId`, the same as Activity does despite also belonging to an
+// Application — scopedDb() only auto-scopes models it's told about by name (see
+// src/lib/auth/scoped-db.ts's OWNED_MODELS), so each child table needs its own owner column
+// rather than relying on the parent Document's.
+model Experience {
+  id        String    @id @default(cuid())
+  title     String
+  employer  String
+  location  String?
+  startDate DateTime?
+  endDate   DateTime?
+  current   Boolean   @default(false)
+  bullets   String // one per line
+  order     Int       @default(0)
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([documentId])
+}
+
+model Education {
+  id            String    @id @default(cuid())
+  institution   String
+  qualification String
+  field         String?
+  startDate     DateTime?
+  endDate       DateTime?
+  grade         String?
+  order         Int       @default(0)
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([documentId])
+}
+
+model Skill {
+  id    String @id @default(cuid())
+  name  String
+  order Int    @default(0)
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @default("")
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([documentId])
+}
+
+model Project {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  link        String?
+  order       Int     @default(0)
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([documentId])
 }
 
 // A target like "10 applications this month" — progress is always computed
