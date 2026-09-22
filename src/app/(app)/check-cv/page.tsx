@@ -57,6 +57,7 @@ export default async function ApplicationReviewerPage({
           cover={
             <CoverLetterTab
               baseCoverLetters={baseCoverLetters}
+              cvDocuments={cvDocuments}
               applications={applications}
               aiAvailable={aiAvailable}
               initialApplicationId={params.applicationId}

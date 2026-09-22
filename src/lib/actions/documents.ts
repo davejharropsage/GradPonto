@@ -134,13 +134,31 @@ export async function duplicateDocumentForApplication(baseDocumentId: string, ap
   return document;
 }
 
-export async function generateTailoredDocument(baseDocumentId: string, applicationId: string, templateKey?: string) {
+export async function generateTailoredDocument(
+  baseDocumentId: string,
+  applicationId: string,
+  templateKey?: string,
+  cvContent?: string
+) {
   await requireAiAllowance();
   const db = await userDb();
   const [base, application] = await Promise.all([
     db.document.findUniqueOrThrow({ where: { id: baseDocumentId } }),
     db.application.findUniqueOrThrow({ where: { id: applicationId }, include: { employer: true } }),
   ]);
+
+  // A cover letter should draw on the candidate's actual CV, not just restyle its own base text
+  // for a new employer name. The Application Reviewer's Cover Letter tab lets you pick exactly
+  // which CV to use; a caller that doesn't supply one (e.g. the quick "Add Document" dialog on
+  // an application page) still gets a sensible default: the most recently updated base CV.
+  let effectiveCvContent = cvContent?.trim() || undefined;
+  if (base.kind === "COVER_LETTER" && !effectiveCvContent) {
+    const fallbackCv = await db.document.findFirst({
+      where: { kind: "CV", isBase: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    effectiveCvContent = fallbackCv?.content;
+  }
 
   const tailoredContent = await tailorDocument({
     kind: base.kind,
@@ -149,6 +167,7 @@ export async function generateTailoredDocument(baseDocumentId: string, applicati
     employerName: application.employer?.name,
     jobDescription: application.description,
     templateKey,
+    cvContent: base.kind === "COVER_LETTER" ? effectiveCvContent : null,
   });
 
   const document = await db.document.create({

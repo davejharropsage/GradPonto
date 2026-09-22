@@ -39,11 +39,18 @@ export function AddDocumentButton({
   const [kind, setKind] = useState<"CV" | "COVER_LETTER">("CV");
   const [baseDocId, setBaseDocId] = useState<string>("");
   const [templateKey, setTemplateKey] = useState(coverLetterTemplates[0].key);
+  const [referenceCvId, setReferenceCvId] = useState<string>("");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   const baseForKind = baseDocuments.filter((d) => d.kind === kind);
   const baseDoc = baseForKind.find((d) => d.id === baseDocId) ?? baseForKind[0];
+
+  // A cover letter drafted with AI reads the candidate's CV for specific, real experience to
+  // reference, rather than just restyling the base letter's own text. Defaults to whichever base
+  // CV exists; only needs a picker when there's a real choice to make.
+  const referenceCvs = baseDocuments.filter((d) => d.kind === "CV");
+  const referenceCv = referenceCvs.find((d) => d.id === referenceCvId) ?? referenceCvs[0];
 
   function handleAdd(method: "manual" | "ai") {
     if (!baseDoc) {
@@ -54,7 +61,12 @@ export function AddDocumentButton({
       try {
         const doc =
           method === "ai"
-            ? await generateTailoredDocument(baseDoc.id, applicationId, kind === "COVER_LETTER" ? templateKey : undefined)
+            ? await generateTailoredDocument(
+                baseDoc.id,
+                applicationId,
+                kind === "COVER_LETTER" ? templateKey : undefined,
+                kind === "COVER_LETTER" ? referenceCv?.content : undefined
+              )
             : await duplicateDocumentForApplication(baseDoc.id, applicationId);
         setOpen(false);
         router.push(`/applications/${applicationId}/documents/${doc.id}`);
@@ -144,6 +156,36 @@ export function AddDocumentButton({
               </SelectContent>
             </Select>
           </div>
+        )}
+
+        {kind === "COVER_LETTER" && referenceCvs.length > 1 && (
+          <div className="grid gap-1.5">
+            <Label htmlFor="doc-reference-cv">Use this CV for context (AI only)</Label>
+            <Select value={referenceCv?.id ?? ""} onValueChange={(v) => setReferenceCvId(v ?? "")}>
+              <SelectTrigger id="doc-reference-cv" className="w-full">
+                <SelectValue>
+                  {(value: string) => referenceCvs.find((d) => d.id === value)?.name || "Untitled CV"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {referenceCvs.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name || "Untitled CV"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {kind === "COVER_LETTER" && referenceCvs.length === 1 && (
+          <p className="text-xs text-muted-foreground">
+            Using {referenceCvs[0].name ? `“${referenceCvs[0].name}”` : "your CV"} for context when generating with AI.
+          </p>
+        )}
+        {kind === "COVER_LETTER" && referenceCvs.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No CV on file yet — add one on the Documents page for a more specific letter.
+          </p>
         )}
 
         <DialogFooter className="gap-2 sm:gap-2">

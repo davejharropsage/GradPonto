@@ -16,24 +16,29 @@ import {
 import { LinkButton } from "@/components/shared/link-button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CvSourcePicker, type CvDoc } from "./cv-source-picker";
 import { generateTailoredDocument } from "@/lib/actions/documents";
 import { coverLetterTemplates } from "@/lib/labels";
 import type { Document } from "@/generated/prisma/client";
 
-/** Picks a base cover letter, a job, and a tone, then generates a tailored copy in that style. */
+/** Picks a CV (for real, specific context), a base cover letter, a job, and a tone, then
+ * generates a tailored copy that references the CV rather than just restyling the base letter. */
 export function CoverLetterTab({
   baseCoverLetters,
+  cvDocuments,
   applications,
   aiAvailable,
   initialApplicationId,
 }: {
   baseCoverLetters: Document[];
+  cvDocuments: CvDoc[];
   applications: { id: string; title: string; employer: { name: string } | null }[];
   aiAvailable: boolean;
   initialApplicationId?: string;
 }) {
   const router = useRouter();
   const [baseId, setBaseId] = useState(baseCoverLetters[0]?.id ?? "");
+  const [cvContent, setCvContent] = useState("");
   const [applicationId, setApplicationId] = useState(initialApplicationId ?? "");
   const [templateKey, setTemplateKey] = useState(coverLetterTemplates[0].key);
   const [pending, startTransition] = useTransition();
@@ -44,7 +49,7 @@ export function CoverLetterTab({
     if (!baseDoc || !applicationId) return;
     startTransition(async () => {
       try {
-        const doc = await generateTailoredDocument(baseDoc.id, applicationId, templateKey);
+        const doc = await generateTailoredDocument(baseDoc.id, applicationId, templateKey, cvContent);
         toast.success("Cover letter generated");
         router.push(`/applications/${applicationId}/documents/${doc.id}`);
       } catch (error) {
@@ -74,6 +79,11 @@ export function CoverLetterTab({
     <div className="space-y-4">
       <Card>
         <CardContent className="space-y-4 pt-6">
+          <CvSourcePicker cvDocuments={cvDocuments} onContentChange={setCvContent} />
+          <p className="-mt-2 text-xs text-muted-foreground">
+            The AI reads this CV for specific, real experience to reference — the letter isn&apos;t just your base text restyled.
+          </p>
+
           {baseCoverLetters.length > 1 && (
             <div className="grid gap-1.5">
               <Label>Starting from</Label>
