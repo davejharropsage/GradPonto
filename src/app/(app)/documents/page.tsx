@@ -1,47 +1,59 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PageHeader } from "@/components/shared/page-header";
-import { DocumentContentEditor } from "@/components/documents/document-content-editor";
+import { DocumentVersionEditor } from "@/components/documents/document-version-editor";
+import { AddVersionForm } from "@/components/documents/add-version-form";
 import { getBaseDocuments } from "@/lib/data/documents";
-import { createBaseDocument } from "@/lib/actions/documents";
 import { documentKindLabels } from "@/lib/labels";
+import { formatDate } from "@/lib/format";
 
 export default async function DocumentsPage() {
   const baseDocuments = await getBaseDocuments();
-  const baseCv = baseDocuments.find((d) => d.kind === "CV");
-  const baseCoverLetter = baseDocuments.find((d) => d.kind === "COVER_LETTER");
 
   return (
     <div>
       <PageHeader
         title="Base Documents"
-        description="Your master CV and cover letter. Every tailored version starts from these."
+        description="Your CV and cover letter versions. Every tailored copy starts from one of these."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {(["CV", "COVER_LETTER"] as const).map((kind) => {
-          const doc = kind === "CV" ? baseCv : baseCoverLetter;
+          const kindLabel = documentKindLabels[kind];
+          const docs = baseDocuments.filter((d) => d.kind === kind);
+
           return (
             <Card key={kind}>
               <CardHeader>
-                <CardTitle className="text-base">Base {documentKindLabels[kind]}</CardTitle>
+                <CardTitle className="text-base">
+                  {kindLabel} versions{docs.length > 0 ? ` (${docs.length})` : ""}
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                {doc ? (
-                  <DocumentContentEditor documentId={doc.id} initialContent={doc.content} />
-                ) : (
-                  <form action={createBaseDocument.bind(null, kind)} className="grid gap-3">
-                    <Textarea
-                      name="content"
-                      rows={12}
-                      placeholder={`Paste your base ${documentKindLabels[kind].toLowerCase()} here...`}
-                    />
-                    <div>
-                      <Button type="submit">Save Base {documentKindLabels[kind]}</Button>
-                    </div>
-                  </form>
+              <CardContent className="space-y-4">
+                {docs.length > 0 && (
+                  // Keyed by the current lead item so a newly added/edited version's expanded
+                  // default is re-applied on a fresh mount, instead of an uncontrolled Accordion
+                  // silently ignoring a changed defaultValue on an already-mounted instance.
+                  <Accordion key={docs[0].id} defaultValue={[docs[0].id]}>
+                    {docs.map((doc) => (
+                      <AccordionItem key={doc.id} value={doc.id}>
+                        <AccordionTrigger>
+                          <span className="flex flex-col items-start text-left">
+                            <span>{doc.name || `Untitled ${kindLabel}`}</span>
+                            <span className="text-xs font-normal text-muted-foreground">
+                              Updated {formatDate(doc.updatedAt)}
+                            </span>
+                          </span>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <DocumentVersionEditor document={doc} kindLabel={kindLabel} />
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
                 )}
+
+                <AddVersionForm kind={kind} kindLabel={kindLabel} startOpen={docs.length === 0} />
               </CardContent>
             </Card>
           );

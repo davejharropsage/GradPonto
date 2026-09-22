@@ -24,6 +24,13 @@ import type { Document, Application, Employer } from "@/generated/prisma/client"
 type CvDoc = Document & { application: (Application & { employer: Employer | null }) | null };
 type CvSource = "upload" | "saved";
 
+// A named base version reads as its name ("Tech CV"); an unnamed one falls back to "Base CV";
+// a tailored copy always reads by the application it was made for, name or not.
+function cvLabel(doc: CvDoc) {
+  if (!doc.isBase) return `Tailored for ${doc.application?.employer?.name ?? "Unknown"} (${doc.application?.title ?? ""})`;
+  return doc.name || "Base CV";
+}
+
 export function CheckCvForm({
   cvDocuments,
   applications,
@@ -189,16 +196,14 @@ export function CheckCvForm({
                       {(value: string) => {
                         const doc = cvDocuments.find((d) => d.id === value);
                         if (!doc) return "Choose a saved CV...";
-                        return doc.isBase ? "Base CV" : `Tailored for ${doc.application?.title ?? "an application"}`;
+                        return cvLabel(doc);
                       }}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {cvDocuments.map((doc) => (
                       <SelectItem key={doc.id} value={doc.id}>
-                        {doc.isBase
-                          ? "Base CV"
-                          : `Tailored for ${doc.application?.employer?.name ?? "Unknown"} (${doc.application?.title ?? ""})`}
+                        {cvLabel(doc)}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -54,3 +54,9 @@ export const documentSchema = z.object({
 });
 
 export type DocumentInput = z.infer<typeof documentSchema>;
+
+// A base document's own display name (e.g. "Tech CV"), separate from its content — used to
+// create/rename a named CV or cover-letter version. Blank clears it back to "Untitled".
+export const documentNameSchema = z.object({
+  name: z.string().trim().max(80).optional().or(z.literal("")),
+});

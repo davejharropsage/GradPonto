@@ -37,11 +37,12 @@ export function AddDocumentButton({
 }) {
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<"CV" | "COVER_LETTER">("CV");
+  const [baseDocId, setBaseDocId] = useState<string>("");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   const baseForKind = baseDocuments.filter((d) => d.kind === kind);
-  const baseDoc = baseForKind[0];
+  const baseDoc = baseForKind.find((d) => d.id === baseDocId) ?? baseForKind[0];
 
   function handleAdd(method: "manual" | "ai") {
     if (!baseDoc) {
@@ -82,7 +83,13 @@ export function AddDocumentButton({
 
         <div className="grid gap-1.5">
           <Label htmlFor="doc-kind">Document type</Label>
-          <Select value={kind} onValueChange={(v) => setKind(v as "CV" | "COVER_LETTER")}>
+          <Select
+            value={kind}
+            onValueChange={(v) => {
+              setKind(v as "CV" | "COVER_LETTER");
+              setBaseDocId("");
+            }}
+          >
             <SelectTrigger id="doc-kind" className="w-full">
               <SelectValue>{(value: string) => documentKindLabels[value] ?? value}</SelectValue>
             </SelectTrigger>
@@ -97,6 +104,26 @@ export function AddDocumentButton({
             </p>
           )}
         </div>
+
+        {baseForKind.length > 1 && (
+          <div className="grid gap-1.5">
+            <Label htmlFor="doc-base-version">Starting from</Label>
+            <Select value={baseDoc?.id ?? ""} onValueChange={(v) => setBaseDocId(v ?? "")}>
+              <SelectTrigger id="doc-base-version" className="w-full">
+                <SelectValue>
+                  {(value: string) => baseForKind.find((d) => d.id === value)?.name || `Untitled ${documentKindLabels[kind]}`}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {baseForKind.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name || `Untitled ${documentKindLabels[kind]}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" disabled={pending || !baseDoc} onClick={() => handleAdd("manual")}>

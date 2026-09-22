@@ -172,6 +172,11 @@ model Document {
   id             String       @id @default(cuid())
   kind           DocumentKind
   isBase         Boolean      @default(false) // base documents have applicationId = null
+  // A user-chosen label for a base document, e.g. "Tech CV" vs "Consulting CV" — several base
+  // documents of the same kind are allowed on purpose, so this is how they're told apart.
+  // Null on older/unnamed documents and on tailored (non-base) copies, which are labelled by
+  // their application instead.
+  name           String?
   content        String // markdown / plain text
   generatedByAI  Boolean      @default(false)
 

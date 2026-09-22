@@ -2,16 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { userDb } from "@/lib/auth/user";
-import { documentSchema } from "@/lib/validations";
+import { documentSchema, documentNameSchema } from "@/lib/validations";
 import { requireAiAllowance } from "@/lib/ai/limit";
 import { tailorDocument } from "@/lib/ai/tailor";
 
 export async function createBaseDocument(kind: "CV" | "COVER_LETTER", formData: FormData) {
   const db = await userDb();
-  const parsed = documentSchema.parse({ content: formData.get("content") });
+  const content = documentSchema.parse({ content: formData.get("content") }).content;
+  const name = documentNameSchema.parse({ name: formData.get("name") }).name;
 
   await db.document.create({
-    data: { kind, isBase: true, content: parsed.content },
+    data: { kind, isBase: true, name: name || null, content },
   });
 
   revalidatePath("/documents");
@@ -28,6 +29,22 @@ export async function updateDocumentContent(id: string, formData: FormData) {
 
   revalidatePath("/documents");
   if (document.applicationId) revalidatePath(`/applications/${document.applicationId}`);
+  return document;
+}
+
+// A base document's own name only — kept separate from updateDocumentContent so the shared
+// content editor (also used for tailored, per-application copies, which have no name of their
+// own) never has to reason about a field that doesn't apply to it.
+export async function renameDocument(id: string, formData: FormData) {
+  const db = await userDb();
+  const parsed = documentNameSchema.parse({ name: formData.get("name") });
+
+  const document = await db.document.update({
+    where: { id },
+    data: { name: parsed.name || null },
+  });
+
+  revalidatePath("/documents");
   return document;
 }
 
