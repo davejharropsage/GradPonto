@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -20,6 +20,12 @@ import {
 } from "@dnd-kit/core";
 import { toast } from "sonner";
 import { PipelineCard, PipelineCardBody, type ApplicationWithEmployer } from "./pipeline-card";
+import {
+  PipelineFilters,
+  defaultPipelineFilters,
+  matchesPipelineFilters,
+  type PipelineFilterState,
+} from "./pipeline-filters";
 import { updateApplicationStatus } from "@/lib/actions/applications";
 import { applicationStatuses, applicationStatusLabels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
@@ -110,8 +116,17 @@ function Column({ status, items, activeId }: { status: string; items: Applicatio
 export function PipelineBoard({ initialGroups }: { initialGroups: Groups }) {
   const [groups, setGroups] = useState(initialGroups);
   const [active, setActive] = useState<ApplicationWithEmployer | null>(null);
+  const [filters, setFilters] = useState<PipelineFilterState>(defaultPipelineFilters);
   const [, startTransition] = useTransition();
   const router = useRouter();
+
+  const employers = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const application of Object.values(groups).flat()) {
+      if (application.employer) seen.set(application.employer.id, application.employer.name);
+    }
+    return Array.from(seen, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [groups]);
 
   const sensors = useSensors(
     // A small movement threshold, so a plain click on the company name still opens the application.
@@ -184,9 +199,16 @@ export function PipelineBoard({ initialGroups }: { initialGroups: Groups }) {
         },
       }}
     >
+      <PipelineFilters filters={filters} onChange={setFilters} employers={employers} />
+
       <div className="flex gap-4 overflow-x-auto pb-4" role="list" aria-label="Application stages">
         {applicationStatuses.map((status) => (
-          <Column key={status} status={status} items={groups[status] ?? []} activeId={active?.id ?? null} />
+          <Column
+            key={status}
+            status={status}
+            items={(groups[status] ?? []).filter((application) => matchesPipelineFilters(application, filters))}
+            activeId={active?.id ?? null}
+          />
         ))}
       </div>
 
