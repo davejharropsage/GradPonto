@@ -1,8 +1,9 @@
-import { ListChecks, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { ReviewerTabs } from "@/components/check-cv/reviewer-tabs";
 import { JobMatchTab } from "@/components/check-cv/job-match-tab";
 import { HealthCheckTab } from "@/components/check-cv/health-check-tab";
+import { AtsTab } from "@/components/check-cv/ats-tab";
 import { ComingSoonTab } from "@/components/check-cv/coming-soon-tab";
 import { getAllCvDocuments } from "@/lib/data/documents";
 import { getApplicationOptions } from "@/lib/data/applications";
@@ -45,10 +46,11 @@ export default async function ApplicationReviewerPage({
           }
           health={<HealthCheckTab cvDocuments={cvDocuments} aiAvailable={aiAvailable} />}
           ats={
-            <ComingSoonTab
-              icon={ListChecks}
-              title="ATS Keywords"
-              description="See exactly which keywords from a job description your CV covers, and which are missing. Coming soon."
+            <AtsTab
+              cvDocuments={cvDocuments}
+              applications={applications}
+              aiAvailable={aiAvailable}
+              initialApplicationId={params.applicationId}
             />
           }
           cover={
