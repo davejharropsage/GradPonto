@@ -19,6 +19,10 @@ export async function createEmployer(formData: FormData) {
       website: toNullable(parsed.website),
       industry: toNullable(parsed.industry),
       notes: toNullable(parsed.notes),
+      contactName: toNullable(parsed.contactName),
+      contactRole: toNullable(parsed.contactRole),
+      contactEmail: toNullable(parsed.contactEmail),
+      contactPhone: toNullable(parsed.contactPhone),
     },
   });
 
@@ -37,6 +41,10 @@ export async function updateEmployer(id: string, formData: FormData) {
       website: toNullable(parsed.website),
       industry: toNullable(parsed.industry),
       notes: toNullable(parsed.notes),
+      contactName: toNullable(parsed.contactName),
+      contactRole: toNullable(parsed.contactRole),
+      contactEmail: toNullable(parsed.contactEmail),
+      contactPhone: toNullable(parsed.contactPhone),
     },
   });
 
@@ -51,23 +59,34 @@ export async function deleteEmployer(id: string) {
   revalidatePath("/employers");
 }
 
-// Reassigns every application from `sourceId` to `targetId`, then removes
-// the now-empty source employer. Applications are never lost; the source
-// employer's own notes/website/industry are discarded since they can't be
-// reconciled automatically.
+// Reassigns every application from `sourceId` to `targetId`, then removes the now-empty source
+// employer. Applications are never lost; the source employer's own notes/website/industry are
+// discarded since they can't be reconciled automatically. Contact details are the one exception:
+// the target's own contact fields win where it has them, otherwise the source's fill the gap —
+// unlike notes/website/industry, a missing contact field is unambiguously "nothing to lose" by
+// preferring whichever employer actually had it set.
 export async function mergeEmployers(sourceId: string, targetId: string) {
   const db = await userDb();
   if (sourceId === targetId) throw new Error("Can't merge an employer into itself");
 
   // Both ids come from the browser. Confirm they're this user's own, so applications can
   // never be re-pointed at (or deleted from) someone else's employer.
-  await Promise.all([
-    db.employer.findUniqueOrThrow({ where: { id: sourceId }, select: { id: true } }),
-    db.employer.findUniqueOrThrow({ where: { id: targetId }, select: { id: true } }),
+  const [source, target] = await Promise.all([
+    db.employer.findUniqueOrThrow({ where: { id: sourceId } }),
+    db.employer.findUniqueOrThrow({ where: { id: targetId } }),
   ]);
 
   await db.$transaction([
     db.application.updateMany({ where: { employerId: sourceId }, data: { employerId: targetId } }),
+    db.employer.update({
+      where: { id: targetId },
+      data: {
+        contactName: target.contactName ?? source.contactName,
+        contactRole: target.contactRole ?? source.contactRole,
+        contactEmail: target.contactEmail ?? source.contactEmail,
+        contactPhone: target.contactPhone ?? source.contactPhone,
+      },
+    }),
     db.employer.delete({ where: { id: sourceId } }),
   ]);
 

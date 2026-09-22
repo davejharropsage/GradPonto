@@ -70,7 +70,8 @@ export function MergeEmployerDialog({
           <DialogTitle>Merge {employerName} into another company</DialogTitle>
           <DialogDescription>
             All applications currently under {employerName} move to the company you pick, then {employerName} is
-            removed. {employerName}&apos;s own website, industry, and notes are not carried over.
+            removed. {employerName}&apos;s own website, industry, and notes are not carried over — but if it has a
+            contact the other company doesn&apos;t, that contact is kept.
           </DialogDescription>
         </DialogHeader>
 

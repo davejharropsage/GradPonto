@@ -62,6 +62,30 @@ export function EmployerForm({
         </div>
       </div>
 
+      <div className="grid gap-3 rounded-lg border p-3">
+        <p className="text-sm font-medium">Contact</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid gap-1.5">
+            <Label htmlFor="contactName">Name</Label>
+            <Input id="contactName" name="contactName" defaultValue={employer?.contactName ?? ""} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="contactRole">Role</Label>
+            <Input id="contactRole" name="contactRole" placeholder="Recruiter, Hiring Manager..." defaultValue={employer?.contactRole ?? ""} />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid gap-1.5">
+            <Label htmlFor="contactEmail">Email</Label>
+            <Input id="contactEmail" name="contactEmail" type="email" defaultValue={employer?.contactEmail ?? ""} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="contactPhone">Phone</Label>
+            <Input id="contactPhone" name="contactPhone" type="tel" defaultValue={employer?.contactPhone ?? ""} />
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-1.5">
         <Label htmlFor="notes">Notes</Label>
         <Textarea id="notes" name="notes" rows={4} defaultValue={employer?.notes ?? ""} />

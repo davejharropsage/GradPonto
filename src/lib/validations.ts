@@ -5,6 +5,10 @@ export const employerSchema = z.object({
   website: z.string().trim().optional().or(z.literal("")),
   industry: z.string().trim().optional().or(z.literal("")),
   notes: z.string().trim().optional().or(z.literal("")),
+  contactName: z.string().trim().optional().or(z.literal("")),
+  contactRole: z.string().trim().optional().or(z.literal("")),
+  contactEmail: z.string().trim().optional().or(z.literal("")),
+  contactPhone: z.string().trim().optional().or(z.literal("")),
 });
 
 export type EmployerInput = z.infer<typeof employerSchema>;

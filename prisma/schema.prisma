@@ -117,6 +117,13 @@ model Employer {
   industry String?
   notes    String?
 
+  // Optional recruiter/hiring-contact details. All independent and optional — set only the ones
+  // you have.
+  contactName  String?
+  contactRole  String?
+  contactEmail String?
+  contactPhone String?
+
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Never rely on this default. scopedDb() always sets the real owner; the "" placeholder only
   // makes the field optional in TypeScript. It is not a real user id, so a write that bypasses

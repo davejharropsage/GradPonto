@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil, Globe, FileText } from "lucide-react";
+import { Pencil, Globe, FileText, User, Mail, Phone } from "lucide-react";
 import { LinkButton } from "@/components/shared/link-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,6 +65,39 @@ export default async function EmployerDetailPage({
               </p>
             </CardContent>
           </Card>
+
+          {(employer.contactName || employer.contactEmail || employer.contactPhone) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Contact</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {employer.contactName && (
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    {employer.contactName}
+                    {employer.contactRole && <span className="text-muted-foreground">&middot; {employer.contactRole}</span>}
+                  </div>
+                )}
+                {employer.contactEmail && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <a href={`mailto:${employer.contactEmail}`} className="truncate hover:underline">
+                      {employer.contactEmail}
+                    </a>
+                  </div>
+                )}
+                {employer.contactPhone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <a href={`tel:${employer.contactPhone}`} className="hover:underline">
+                      {employer.contactPhone}
+                    </a>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {employer.notes && (
             <Card>
