@@ -3,13 +3,25 @@
 import { useActionState, useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { changeEmailAction, resendCodeAction, verifyCodeAction } from "@/lib/actions/auth";
+import type { AuthFormState } from "@/lib/actions/auth";
 
 const RESEND_WAIT_SECONDS = 30;
 
-/** Step 2: type the 6-digit code from the email. Submits by itself as soon as six digits are in. */
-export function CodeForm() {
-  const [verifyState, verifyAction, verifying] = useActionState(verifyCodeAction, undefined);
+/**
+ * Type the 6-digit code from the email. Submits by itself as soon as six digits are in.
+ * Used both for the old sign-in code and the signup email-verification code — the three actions
+ * that actually differ (verify/resend/"use a different email") are passed in.
+ */
+export function CodeForm({
+  verifyAction: verifyActionProp,
+  resendAction: resendActionProp,
+  changeEmailAction,
+}: {
+  verifyAction: (prevState: AuthFormState, formData: FormData) => Promise<AuthFormState>;
+  resendAction: () => Promise<AuthFormState>;
+  changeEmailAction: () => Promise<void>;
+}) {
+  const [verifyState, verifyAction, verifying] = useActionState(verifyActionProp, undefined);
   const [code, setCode] = useState("");
   const inputId = useId();
   const errorId = useId();
@@ -25,7 +37,7 @@ export function CodeForm() {
   const secondsLeft = Math.max(0, Math.ceil((cooldownEndsAt - now) / 1000));
 
   const [resendState, resendAction, resending] = useActionState(async () => {
-    const result = await resendCodeAction();
+    const result = await resendActionProp();
     if (result?.notice) {
       setNow(Date.now());
       setCooldownEndsAt(Date.now() + RESEND_WAIT_SECONDS * 1000);

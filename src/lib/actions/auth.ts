@@ -4,13 +4,14 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { AUTH, cookiesAreSecure } from "@/lib/auth/config";
-import { completeRegistration, upsertVerifiedUser } from "@/lib/auth/account";
+import { completeRegistration, upsertVerifiedUser, upsertPendingSignup, markEmailVerified } from "@/lib/auth/account";
 import { issueLoginCode, verifyLoginCode } from "@/lib/auth/codes";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { requireUser } from "@/lib/auth/user";
 import { sendMail } from "@/lib/auth/mailer";
-import { loginCodeEmail, welcomeEmail } from "@/lib/auth/email-templates";
+import { loginCodeEmail, verifyEmailCodeEmail, welcomeEmail } from "@/lib/auth/email-templates";
 import { isRateLimited } from "@/lib/auth/rate-limit";
+import { hashPassword, passwordSchema } from "@/lib/auth/password";
 
 // Server Actions are public HTTP endpoints, so each one re-checks everything itself.
 // (Next.js also verifies the request Origin, which protects them against CSRF.)
@@ -60,7 +61,7 @@ export async function requestCodeAction(_prev: AuthFormState, formData: FormData
 
   // The response is the same whether or not this address already has an account, so this
   // form can't be used to find out who is registered.
-  const issued = await issueLoginCode(email);
+  const issued = await issueLoginCode(email, "SIGNUP");
 
   if (issued.ok) {
     try {
@@ -87,7 +88,7 @@ export async function verifyCodeAction(_prev: AuthFormState, formData: FormData)
     return { error: "Too many attempts. Please wait a few minutes and try again." };
   }
 
-  const result = await verifyLoginCode(email, String(formData.get("code") ?? ""));
+  const result = await verifyLoginCode(email, String(formData.get("code") ?? ""), "SIGNUP");
   if (!result.ok) {
     const messages = {
       invalid: "That code isn't right. Check it and try again.",
@@ -117,7 +118,7 @@ export async function resendCodeAction(): Promise<AuthFormState> {
     return { error: "Too many attempts. Please wait a few minutes and try again." };
   }
 
-  const issued = await issueLoginCode(email);
+  const issued = await issueLoginCode(email, "SIGNUP");
   if (!issued.ok) {
     return issued.reason === "cooldown"
       ? { error: `Please wait ${issued.retryAfterSeconds} seconds before asking for another code.` }
@@ -137,6 +138,109 @@ export async function resendCodeAction(): Promise<AuthFormState> {
 export async function changeEmailAction() {
   (await cookies()).delete(AUTH.emailCookie);
   redirect("/signin");
+}
+
+// --- Sign up with a password -------------------------------------------------------------------
+
+const signUpSchema = z
+  .object({ email: emailSchema, password: passwordSchema, confirmPassword: z.string() })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Those passwords don't match.",
+    path: ["confirmPassword"],
+  });
+
+/** Step 1: email + password. Creates the account (unverified) and sends a verification code. */
+export async function signUpAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const parsed = signUpSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check your details and try again." };
+  const { email, password } = parsed.data;
+
+  if (await isRateLimited("signup", REQUESTS_PER_IP, TEN_MINUTES)) {
+    return { error: "Too many attempts. Please wait a few minutes and try again." };
+  }
+
+  const user = await upsertPendingSignup(email, hashPassword(password));
+  if (!user) {
+    return { error: "That email already has an account. Try signing in, or use “Forgot password?” instead." };
+  }
+
+  const issued = await issueLoginCode(email, "SIGNUP");
+  if (issued.ok) {
+    try {
+      await sendMail(verifyEmailCodeEmail(email, issued.code));
+    } catch (error) {
+      console.error("Could not send verification email:", error);
+      return { error: "We couldn't send the email just now. Please try again in a moment." };
+    }
+  } else if (issued.reason === "hourly-limit") {
+    return { error: "Too many codes have been requested for this address. Please try again later." };
+  }
+  // "cooldown": a code was sent moments ago and is still valid, so just carry on.
+
+  await rememberEmail(email);
+  redirect("/signup/verify");
+}
+
+/** Step 2: the verification code. On success the account is verified and signed in. */
+export async function verifySignupAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const email = await pendingEmail();
+  if (!email) redirect("/signup");
+
+  if (await isRateLimited("verify-signup", VERIFIES_PER_IP, TEN_MINUTES)) {
+    return { error: "Too many attempts. Please wait a few minutes and try again." };
+  }
+
+  const result = await verifyLoginCode(email, String(formData.get("code") ?? ""), "SIGNUP");
+  if (!result.ok) {
+    const messages = {
+      invalid: "That code isn't right. Check it and try again.",
+      expired: "That code has expired. Send yourself a new one.",
+      locked: "Too many wrong attempts on that code. Send yourself a new one.",
+      none: "Send yourself a new code to continue.",
+    } as const;
+    return { error: messages[result.reason] };
+  }
+
+  const user = await markEmailVerified(email);
+  await createSession(user.id);
+  (await cookies()).delete(AUTH.emailCookie);
+
+  redirect(user.registeredAt ? "/" : "/welcome");
+}
+
+/** "Send a new code" on the signup verify step. */
+export async function resendSignupCodeAction(): Promise<AuthFormState> {
+  const email = await pendingEmail();
+  if (!email) redirect("/signup");
+
+  if (await isRateLimited("signup", REQUESTS_PER_IP, TEN_MINUTES)) {
+    return { error: "Too many attempts. Please wait a few minutes and try again." };
+  }
+
+  const issued = await issueLoginCode(email, "SIGNUP");
+  if (!issued.ok) {
+    return issued.reason === "cooldown"
+      ? { error: `Please wait ${issued.retryAfterSeconds} seconds before asking for another code.` }
+      : { error: "Too many codes have been requested for this address. Please try again later." };
+  }
+
+  try {
+    await sendMail(verifyEmailCodeEmail(email, issued.code));
+  } catch (error) {
+    console.error("Could not send verification email:", error);
+    return { error: "We couldn't send the email just now. Please try again in a moment." };
+  }
+  return { notice: "We've sent you a new code." };
+}
+
+/** "Use a different email" on the signup verify step. */
+export async function changeSignupEmailAction() {
+  (await cookies()).delete(AUTH.emailCookie);
+  redirect("/signup");
 }
 
 /** Step 3 (new people only): name and university. This completes registration. */

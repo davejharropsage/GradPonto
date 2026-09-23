@@ -111,6 +111,33 @@ export function loginCodeContent(v: { code: string; minutes: string | number }):
   };
 }
 
+/** The signup email-verification code — proves they own the address before the account is usable. */
+export function verifyEmailContent(v: { code: string; minutes: string | number }): EmailContent {
+  const code = esc(String(v.code));
+  const minutes = esc(String(v.minutes));
+
+  return {
+    subject: `Your GradPonto verification code: ${v.code}`,
+    text:
+      `Your GradPonto email verification code is ${v.code}\n\n` +
+      `Enter it to finish creating your account. It expires in ${v.minutes} minutes and can only be used once.\n\n` +
+      `If you didn't try to create a GradPonto account you can safely ignore this email.\n`,
+    html: page({
+      title: "Verify your email",
+      preview: `Your verification code is ${v.code}. It expires in ${v.minutes} minutes.`,
+      eyebrow: "Verify your email",
+      heading: "Confirm it's you",
+      body: `            <p style="margin:0 0 24px;color:#62646d;">Enter this code to finish creating your GradPonto account.</p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td class="gp-code" align="center" bgcolor="#f5f7fb" style="background:#f5f7fb;border-radius:14px;padding:22px 12px;font-family:Consolas,Menlo,'Courier New',monospace;font-size:38px;line-height:1.2;font-weight:700;letter-spacing:10px;color:#202128;">${code}</td>
+            </tr></table>
+            <p style="margin:20px 0 0;font-size:14px;color:#62646d;"><strong style="color:#202128;">Expires in ${minutes} minutes</strong> and can only be used once.</p>
+            <p style="margin:18px 0 0;padding-top:18px;border-top:1px solid #e1e6ef;font-size:14px;color:#62646d;">Didn&#39;t try to create a GradPonto account? You can safely ignore this email &mdash; nobody can finish creating an account without this code.</p>`,
+      footerNote: "You're receiving this because this email address was used to start creating a GradPonto account.",
+    }),
+  };
+}
+
 /** Sent once, when registration is completed, to confirm the account exists. */
 export function welcomeContent(v: { name: string; university: string; email: string; appUrl: string }): EmailContent {
   const name = esc(v.name);
@@ -135,13 +162,12 @@ export function welcomeContent(v: { name: string; university: string; email: str
       `  Name:        ${v.name}\n` +
       `  University:  ${v.university}\n` +
       `  Sign-in email: ${v.email}\n\n` +
-      `How you sign in: there is no password. Go to ${v.appUrl}/signin, enter this email address, ` +
-      `and we'll send you a one-time code.\n\n` +
+      `How you sign in: go to ${v.appUrl}/signin and enter this email address and your password.\n\n` +
       `Open GradPonto: ${v.appUrl}/\n\n` +
-      `If you didn't create this account, you can ignore this email; nobody can sign in without a code sent to this address.\n`,
+      `If you didn't create this account, you can ignore this email.\n`,
     html: page({
       title: "Welcome to GradPonto",
-      preview: `Your account is ready, ${v.name}. There's no password: we email you a code each time you sign in.`,
+      preview: `Your account is ready, ${v.name}.`,
       eyebrow: "Account created",
       heading: `Welcome, ${name}`,
       body: `            <p style="margin:0 0 22px;color:#62646d;">Your GradPonto account is ready. Here&#39;s what we have on file:</p>
@@ -151,11 +177,11 @@ export function welcomeContent(v: { name: string; university: string; email: str
               ${row("Sign-in email", email, "last")}
             </table>
             <p style="margin:26px 0 6px;font-weight:700;">How you sign in</p>
-            <p style="margin:0 0 26px;color:#62646d;">There&#39;s no password to remember. Enter your email address on the sign-in page and we&#39;ll email you a one-time code each time.</p>
+            <p style="margin:0 0 26px;color:#62646d;">Enter your email address and your password on the sign-in page.</p>
             <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
               <td bgcolor="#202128" style="border-radius:10px;background:#202128;"><a href="${appUrl}/" style="display:inline-block;padding:14px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">Open GradPonto</a></td>
             </tr></table>
-            <p style="margin:26px 0 0;padding-top:18px;border-top:1px solid #e1e6ef;font-size:14px;color:#62646d;">Didn&#39;t create this account? You can ignore this email. Nobody can sign in without a code sent to this address.</p>`,
+            <p style="margin:26px 0 0;padding-top:18px;border-top:1px solid #e1e6ef;font-size:14px;color:#62646d;">Didn&#39;t create this account? You can ignore this email.</p>`,
       footerNote: "You're receiving this because this email address was used to create a GradPonto account.",
     }),
   };

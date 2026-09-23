@@ -26,6 +26,31 @@ export function upsertVerifiedUser(email: string) {
 }
 
 /**
+ * Starts a new signup: creates the account (unverified) with its password. If an earlier signup
+ * with this email was started but never verified, this resets its password and picks up where it
+ * left off rather than erroring — a very normal thing to happen (they mistyped, or just didn't
+ * finish). Returns null if `email` belongs to an already-verified account, so the caller can point
+ * them to sign-in or forgot-password instead of silently overwriting a real password.
+ */
+export async function upsertPendingSignup(email: string, passwordHash: string) {
+  const existing = await prisma.user.findUnique({ where: { email }, select: { emailVerifiedAt: true } });
+  if (existing?.emailVerifiedAt) return null;
+
+  const role = isAdminEmail(email) ? ("ADMIN" as const) : undefined;
+  return prisma.user.upsert({
+    where: { email },
+    create: { email, passwordHash, ...(role && { role }) },
+    update: { passwordHash, ...(role && { role }) },
+  });
+}
+
+/** Marks the account's email as verified once the signup code is confirmed correct. */
+export function markEmailVerified(email: string) {
+  const now = new Date();
+  return prisma.user.update({ where: { email }, data: { emailVerifiedAt: now, lastLoginAt: now } });
+}
+
+/**
  * Finishes registration. Only takes effect if it hasn't been completed yet, so a
  * double-click or a replayed request can't register twice (or send a second email).
  * Returns true if this call is the one that completed it.

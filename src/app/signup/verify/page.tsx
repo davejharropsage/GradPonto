@@ -7,17 +7,17 @@ import { CodeForm } from "@/components/auth/code-form";
 import { AUTH } from "@/lib/auth/config";
 import { mailMode } from "@/lib/auth/mailer";
 import { signedInDestination } from "@/lib/auth/user";
-import { changeEmailAction, resendCodeAction, verifyCodeAction } from "@/lib/actions/auth";
+import { changeSignupEmailAction, resendSignupCodeAction, verifySignupAction } from "@/lib/actions/auth";
 
-export const metadata: Metadata = { title: "Enter your code" };
+export const metadata: Metadata = { title: "Verify your email" };
 
-export default async function VerifyPage() {
+export default async function SignUpVerifyPage() {
   const destination = await signedInDestination();
   if (destination) redirect(destination);
 
   // No address to verify (cookie expired, or someone came straight here): start again.
   const email = (await cookies()).get(AUTH.emailCookie)?.value;
-  if (!email) redirect("/signin");
+  if (!email) redirect("/signup");
 
   const devInbox = process.env.NODE_ENV !== "production" && mailMode() === "dev-outbox";
 
@@ -32,7 +32,11 @@ export default async function VerifyPage() {
       </div>
 
       <div className="mt-8">
-        <CodeForm verifyAction={verifyCodeAction} resendAction={resendCodeAction} changeEmailAction={changeEmailAction} />
+        <CodeForm
+          verifyAction={verifySignupAction}
+          resendAction={resendSignupCodeAction}
+          changeEmailAction={changeSignupEmailAction}
+        />
 
         {devInbox && (
           <div className="mt-6 rounded-2xl bg-[#e9eef8] p-4 text-sm text-[#202128]">
