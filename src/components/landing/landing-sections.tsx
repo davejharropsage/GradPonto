@@ -15,7 +15,7 @@ export function Hero() {
                 <h1 className="display"><span className="line">Find it.</span> <span className="line">Apply for it.</span> <span className="line"><span className="gp-gradient-text">Track it.</span></span></h1>
                 <p className="lede">GradPonto pulls UK placements, internships and apprenticeships into one ranked list, then helps you keep every application moving, from saved to signed.</p>
                 <div className="btn-row">
-                  <Link className="gp-btn gp-btn--lg" href="/signin">Get started free</Link>
+                  <Link className="gp-btn gp-btn--lg" href="/signup">Get started free</Link>
                   <a className="gp-btn gp-btn--ghost gp-btn--lg" href="#how">See how it works</a>
                 </div>
                 <p className="sources">
@@ -308,7 +308,7 @@ export function Faq() {
               <details><summary>Where do the listings come from?</summary><p>GradPonto searches several established UK job sources together, currently Adzuna, Reed and the government&apos;s Find an Apprenticeship service, then removes duplicates and ranks what&apos;s left.</p></details>
               <details><summary>Do I apply through GradPonto?</summary><p>No. Each result links to the original advert and you apply on the employer&apos;s site. GradPonto helps you find the role and keep track of it afterwards.</p></details>
               <details><summary>How does the match score work?</summary><p>It compares the keywords you enter with each listing. A keyword in the job title counts for more than one in the description, so closer matches score higher.</p></details>
-              <details><summary>How do I sign up?</summary><p>You can create your account now. Enter your email below, or choose Get started free, and we&apos;ll send you a one-time code to sign in. There&apos;s no password to set up.</p></details>
+              <details><summary>How do I sign up?</summary><p>Choose Get started free, set an email and password, and confirm your email with a one-time code we send you. That&apos;s it &mdash; you&apos;re in.</p></details>
             </div>
           </div>
         </section>

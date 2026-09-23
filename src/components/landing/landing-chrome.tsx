@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Brand } from "@/components/brand/brand";
-import { EmailForm } from "@/components/auth/email-form";
 
 /** Shared SVG definitions: the four-point sparkle used as a decorative motif around the page. */
 export function SvgDefs() {
@@ -53,7 +52,7 @@ export function LandingHeader({ signedIn }: { signedIn: boolean }) {
   );
 }
 
-/** Closing call to action, with the same email form as the sign-in page. */
+/** Closing call to action. */
 export function LandingCta({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="section" id="get-started">
@@ -75,12 +74,10 @@ export function LandingCta({ signedIn }: { signedIn: boolean }) {
             </>
           ) : (
             <>
-              <p className="lede lede--on-dark">
-                Create your account in a minute. We&apos;ll email you a one-time code, so there&apos;s no password to set up.
-              </p>
-              <div className="cta__email">
-                <EmailForm tone="dark" buttonLabel="Get started free" />
-              </div>
+              <p className="lede lede--on-dark">Create your account in a minute. Free to start, no credit card needed.</p>
+              <Link className="gp-btn gp-btn--light gp-btn--lg" href="/signup">
+                Get started free
+              </Link>
               <p className="cta__signin">
                 Already have an account? <Link href="/signin">Sign in</Link>
               </p>

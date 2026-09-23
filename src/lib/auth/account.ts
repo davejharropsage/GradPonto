@@ -50,6 +50,18 @@ export function markEmailVerified(email: string) {
   return prisma.user.update({ where: { email }, data: { emailVerifiedAt: now, lastLoginAt: now } });
 }
 
+/** Looks a signed-in candidate up by email for signInAction. Only the fields it needs to decide. */
+export function findUserForSignIn(email: string) {
+  return prisma.user.findUnique({
+    where: { email },
+    select: { id: true, passwordHash: true, emailVerifiedAt: true, registeredAt: true, suspendedAt: true },
+  });
+}
+
+export function recordSignIn(userId: string) {
+  return prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
+}
+
 /**
  * Finishes registration. Only takes effect if it hasn't been completed yet, so a
  * double-click or a replayed request can't register twice (or send a second email).

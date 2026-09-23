@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { EmailForm } from "@/components/auth/email-form";
+import { SignInForm } from "@/components/auth/signin-form";
 import { OrDivider, ProviderButtons } from "@/components/auth/provider-buttons";
 import { signedInDestination } from "@/lib/auth/user";
 
-export const metadata: Metadata = { title: "Sign in or create your account" };
+export const metadata: Metadata = { title: "Sign in" };
 
 export default async function SignInPage({
   searchParams,
@@ -27,19 +27,19 @@ export default async function SignInPage({
         </p>
       )}
       <div className="text-center">
-        <h1 className="text-4xl text-[#202128] sm:text-5xl">Get started with GradPonto</h1>
-        <p className="mt-3 text-[#62646d]">Sign in or create your account. Free to start, no credit card needed.</p>
+        <h1 className="text-4xl text-[#202128] sm:text-5xl">Welcome back</h1>
+        <p className="mt-3 text-[#62646d]">Sign in to GradPonto.</p>
       </div>
 
       <div className="mt-8">
         <ProviderButtons />
         <OrDivider />
-        <EmailForm />
-        <p className="mt-6 text-center text-xs leading-relaxed text-[#62646d]">
-          By continuing you agree to our{" "}
-          <Link href="/terms" className="font-semibold text-[#202128] underline">Terms</Link> and{" "}
-          <Link href="/privacy" className="font-semibold text-[#202128] underline">Privacy Policy</Link>. We&apos;ll email you a
-          one-time code, so there&apos;s no password to remember.
+        <SignInForm />
+        <p className="mt-6 text-center text-sm text-[#62646d]">
+          New to GradPonto?{" "}
+          <Link href="/signup" className="font-semibold text-[#476adb] hover:underline">
+            Create an account
+          </Link>
         </p>
       </div>
     </AuthShell>

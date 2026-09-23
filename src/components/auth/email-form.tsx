@@ -3,20 +3,21 @@
 import { useActionState, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { requestCodeAction } from "@/lib/actions/auth";
+import type { AuthFormState } from "@/lib/actions/auth";
 
 /**
- * Step 1: type an email, get a code. Used on the sign-in page and on the landing page.
- * `tone="dark"` styles it for use on the dark call-to-action panel.
+ * Just an email field. Used by the forgot-password page (the action it posts to is passed in).
  */
 export function EmailForm({
-  buttonLabel = "Continue with email",
+  action: actionProp,
+  buttonLabel = "Continue",
   tone = "light",
 }: {
+  action: (prevState: AuthFormState, formData: FormData) => Promise<AuthFormState>;
   buttonLabel?: string;
   tone?: "light" | "dark";
 }) {
-  const [state, action, pending] = useActionState(requestCodeAction, undefined);
+  const [state, action, pending] = useActionState(actionProp, undefined);
   const [email, setEmail] = useState("");
   const inputId = useId();
   const errorId = useId();
@@ -44,6 +45,11 @@ export function EmailForm({
           {state.error}
         </p>
       )}
+      {state?.notice && (
+        <p role="status" className={tone === "dark" ? "text-sm text-[#a8e6c1]" : "text-sm text-[#006b3c]"}>
+          {state.notice}
+        </p>
+      )}
       <Button
         type="submit"
         size="lg"
@@ -54,7 +60,7 @@ export function EmailForm({
             : "h-12 w-full rounded-[10px]"
         }
       >
-        {pending ? "Sending your code…" : buttonLabel}
+        {pending ? "Sending…" : buttonLabel}
       </Button>
     </form>
   );
