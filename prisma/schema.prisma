@@ -52,10 +52,10 @@ enum Role {
   ADMIN
 }
 
-// A registered person. Passwordless: they prove they own `email` by entering a
-// one-time code (see LoginCode). The account exists as soon as the email is
-// verified; `registeredAt` is set once they have also given their name and
-// university, and the app is only usable after that.
+// A registered person. They sign in with `email` + `passwordHash`. `email` is proven once, at
+// signup, by entering a one-time code (see LoginCode); the account exists as soon as that
+// verification completes, and `registeredAt` is set once they've also given their name and
+// university — the app is only usable after that.
 //
 // Every row of user data below (Employer, Application, Document, Goal,
 // Activity) belongs to exactly one User via `userId`. Always read and write
@@ -63,7 +63,12 @@ enum Role {
 // injects `userId` for you, never through the raw Prisma client.
 model User {
   id              String    @id @default(cuid())
-  email           String    @unique // stored lower-cased
+  email           String    @unique // stored lower-cased; also the sign-in identifier
+  // Null only for an account that predates password sign-in and hasn't set one yet — resolved via
+  // the forgot-password flow (src/lib/actions/auth.ts), which works identically whether this is
+  // null (first time) or already set (an ordinary reset). See src/lib/auth/password.ts for the
+  // scrypt-based hash/verify functions.
+  passwordHash    String?
   name            String?
   university      String?
   plan            Plan      @default(FREE)
@@ -107,18 +112,25 @@ model Session {
   @@index([expiresAt])
 }
 
-// A one-time sign-in code emailed to `email`. Only an HMAC of the code is
-// stored. Codes expire, are single-use, and lock after too many wrong guesses.
+// A one-time code emailed to `email`, either to verify it at signup or to authorise a password
+// reset (see `purpose`) — never to sign in directly any more. Only an HMAC of the code is stored.
+// Codes expire, are single-use, and lock after too many wrong guesses.
 model LoginCode {
-  id         String    @id @default(cuid())
+  id         String          @id @default(cuid())
   email      String
+  purpose    LoginCodePurpose @default(SIGNUP)
   codeHash   String
   expiresAt  DateTime
-  attempts   Int       @default(0)
+  attempts   Int             @default(0)
   consumedAt DateTime?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime        @default(now())
 
-  @@index([email, createdAt])
+  @@index([email, purpose, createdAt])
+}
+
+enum LoginCodePurpose {
+  SIGNUP
+  RESET
 }
 
 model Employer {
