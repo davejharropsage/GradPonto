@@ -138,6 +138,33 @@ export function verifyEmailContent(v: { code: string; minutes: string | number }
   };
 }
 
+/** The password-reset code. */
+export function resetPasswordContent(v: { code: string; minutes: string | number }): EmailContent {
+  const code = esc(String(v.code));
+  const minutes = esc(String(v.minutes));
+
+  return {
+    subject: `Your GradPonto password reset code: ${v.code}`,
+    text:
+      `Your GradPonto password reset code is ${v.code}\n\n` +
+      `Enter it to set a new password. It expires in ${v.minutes} minutes and can only be used once.\n\n` +
+      `If you didn't ask to reset your password you can safely ignore this email; your password won't change.\n`,
+    html: page({
+      title: "Reset your password",
+      preview: `Your password reset code is ${v.code}. It expires in ${v.minutes} minutes.`,
+      eyebrow: "Password reset",
+      heading: "Reset your password",
+      body: `            <p style="margin:0 0 24px;color:#62646d;">Enter this code on GradPonto to set a new password.</p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td class="gp-code" align="center" bgcolor="#f5f7fb" style="background:#f5f7fb;border-radius:14px;padding:22px 12px;font-family:Consolas,Menlo,'Courier New',monospace;font-size:38px;line-height:1.2;font-weight:700;letter-spacing:10px;color:#202128;">${code}</td>
+            </tr></table>
+            <p style="margin:20px 0 0;font-size:14px;color:#62646d;"><strong style="color:#202128;">Expires in ${minutes} minutes</strong> and can only be used once.</p>
+            <p style="margin:18px 0 0;padding-top:18px;border-top:1px solid #e1e6ef;font-size:14px;color:#62646d;">Didn&#39;t ask to reset your password? You can safely ignore this email &mdash; your password won&#39;t change unless this code is used.</p>`,
+      footerNote: "You're receiving this because a password reset was requested for this email address.",
+    }),
+  };
+}
+
 /** Sent once, when registration is completed, to confirm the account exists. */
 export function welcomeContent(v: { name: string; university: string; email: string; appUrl: string }): EmailContent {
   const name = esc(v.name);

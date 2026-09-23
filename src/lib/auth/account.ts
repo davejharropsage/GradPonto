@@ -63,6 +63,21 @@ export function recordSignIn(userId: string) {
 }
 
 /**
+ * Sets a new password once a reset code has been verified — the exact same flow whether the
+ * account had no password yet (Lucas's account today, and anyone else who predates password
+ * sign-in) or already had one. Ends every other signed-in session, since a password reset should
+ * sign everyone else out, same as changing a password anywhere else. Returns false only if the
+ * email somehow doesn't belong to any account (a reset code has no relation to User, so this is
+ * the one place that's re-checked).
+ */
+export async function resetPassword(email: string, passwordHash: string): Promise<boolean> {
+  const result = await prisma.user.updateMany({ where: { email }, data: { passwordHash } });
+  if (result.count === 0) return false;
+  await prisma.session.deleteMany({ where: { user: { email } } });
+  return true;
+}
+
+/**
  * Finishes registration. Only takes effect if it hasn't been completed yet, so a
  * double-click or a replayed request can't register twice (or send a second email).
  * Returns true if this call is the one that completed it.

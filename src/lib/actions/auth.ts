@@ -10,12 +10,13 @@ import {
   markEmailVerified,
   findUserForSignIn,
   recordSignIn,
+  resetPassword,
 } from "@/lib/auth/account";
 import { issueLoginCode, verifyLoginCode } from "@/lib/auth/codes";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { requireUser } from "@/lib/auth/user";
 import { sendMail } from "@/lib/auth/mailer";
-import { verifyEmailCodeEmail, welcomeEmail } from "@/lib/auth/email-templates";
+import { verifyEmailCodeEmail, resetPasswordCodeEmail, welcomeEmail } from "@/lib/auth/email-templates";
 import { isRateLimited, isRateLimitedKey } from "@/lib/auth/rate-limit";
 import { hashPassword, verifyPassword, passwordSchema } from "@/lib/auth/password";
 
@@ -214,6 +215,110 @@ export async function resendSignupCodeAction(): Promise<AuthFormState> {
 export async function changeSignupEmailAction() {
   (await cookies()).delete(AUTH.emailCookie);
   redirect("/signup");
+}
+
+// --- Forgot / reset password ---------------------------------------------------------------------
+// Also how anyone whose account predates password sign-in (i.e. everyone, right now) sets their
+// first password — resetPassword() in account.ts treats "no password yet" and "changing an
+// existing one" identically, so there's no separate "migrate my account" flow to build.
+
+/** Step 1: just an email. Sends a reset code if that address has an account — same response either way. */
+export async function requestPasswordResetAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const parsed = emailSchema.safeParse(formData.get("email"));
+  if (!parsed.success) return { error: "Enter a valid email address." };
+  const email = parsed.data;
+
+  if (await isRateLimited("reset", REQUESTS_PER_IP, TEN_MINUTES)) {
+    return { error: "Too many attempts. Please wait a few minutes and try again." };
+  }
+
+  // Deliberately doesn't reveal whether this address has an account — issueLoginCode happily
+  // issues a code for any address, since LoginCode has no relation to User at all.
+  const issued = await issueLoginCode(email, "RESET");
+  if (issued.ok) {
+    try {
+      await sendMail(resetPasswordCodeEmail(email, issued.code));
+    } catch (error) {
+      console.error("Could not send password reset email:", error);
+      return { error: "We couldn't send the email just now. Please try again in a moment." };
+    }
+  } else if (issued.reason === "hourly-limit") {
+    return { error: "Too many codes have been requested for this address. Please try again later." };
+  }
+  // "cooldown": a code was sent moments ago and is still valid, so just carry on.
+
+  await rememberEmail(email);
+  redirect("/reset-password");
+}
+
+const resetPasswordSchema = z
+  .object({ code: z.string(), password: passwordSchema, confirmPassword: z.string() })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Those passwords don't match.",
+    path: ["confirmPassword"],
+  });
+
+/** Step 2: the code plus a new password, in one form. */
+export async function resetPasswordAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const email = await pendingEmail();
+  if (!email) redirect("/forgot-password");
+
+  const parsed = resetPasswordSchema.safeParse({
+    code: formData.get("code"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check your details and try again." };
+
+  if (await isRateLimited("verify-reset", VERIFIES_PER_IP, TEN_MINUTES)) {
+    return { error: "Too many attempts. Please wait a few minutes and try again." };
+  }
+
+  const result = await verifyLoginCode(email, parsed.data.code, "RESET");
+  if (!result.ok) {
+    const messages = {
+      invalid: "That code isn't right. Check it and try again.",
+      expired: "That code has expired. Send yourself a new one.",
+      locked: "Too many wrong attempts on that code. Send yourself a new one.",
+      none: "Send yourself a new code to continue.",
+    } as const;
+    return { error: messages[result.reason] };
+  }
+
+  const changed = await resetPassword(email, hashPassword(parsed.data.password));
+  if (!changed) {
+    // The code was valid but the address doesn't actually have an account. Shouldn't normally
+    // happen from the real form, but fail safely rather than throw.
+    return { error: "Something went wrong. Please start again." };
+  }
+
+  (await cookies()).delete(AUTH.emailCookie);
+  redirect("/signin?reset=1");
+}
+
+/** "Send a new code" on the reset-password step. */
+export async function resendResetCodeAction(): Promise<AuthFormState> {
+  const email = await pendingEmail();
+  if (!email) redirect("/forgot-password");
+
+  if (await isRateLimited("reset", REQUESTS_PER_IP, TEN_MINUTES)) {
+    return { error: "Too many attempts. Please wait a few minutes and try again." };
+  }
+
+  const issued = await issueLoginCode(email, "RESET");
+  if (!issued.ok) {
+    return issued.reason === "cooldown"
+      ? { error: `Please wait ${issued.retryAfterSeconds} seconds before asking for another code.` }
+      : { error: "Too many codes have been requested for this address. Please try again later." };
+  }
+
+  try {
+    await sendMail(resetPasswordCodeEmail(email, issued.code));
+  } catch (error) {
+    console.error("Could not send password reset email:", error);
+    return { error: "We couldn't send the email just now. Please try again in a moment." };
+  }
+  return { notice: "We've sent you a new code." };
 }
 
 /** Step 3 (new people only): name and university. This completes registration. */

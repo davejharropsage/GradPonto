@@ -1,6 +1,6 @@
 import "server-only";
 import { AUTH, appUrl } from "./config";
-import { loginCodeContent, verifyEmailContent, welcomeContent } from "./email-content";
+import { loginCodeContent, verifyEmailContent, resetPasswordContent, welcomeContent } from "./email-content";
 import type { Mail } from "./mailer";
 
 // The wording and design live in email-content.ts (shared with the MailerSend export).
@@ -14,6 +14,11 @@ export function loginCodeEmail(to: string, code: string): Mail {
 /** The signup email-verification code. */
 export function verifyEmailCodeEmail(to: string, code: string): Mail {
   return { to, ...verifyEmailContent({ code, minutes: AUTH.codeTtlMinutes }) };
+}
+
+/** The password-reset code. */
+export function resetPasswordCodeEmail(to: string, code: string): Mail {
+  return { to, ...resetPasswordContent({ code, minutes: AUTH.codeTtlMinutes }) };
 }
 
 /** Sent once, when registration is completed, to confirm the account exists. */

@@ -11,19 +11,24 @@ export const metadata: Metadata = { title: "Sign in" };
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ suspended?: string }>;
+  searchParams: Promise<{ suspended?: string; reset?: string }>;
 }) {
   // Already signed in? Skip straight on.
   const destination = await signedInDestination();
   if (destination) redirect(destination);
 
-  const { suspended } = await searchParams;
+  const { suspended, reset } = await searchParams;
 
   return (
     <AuthShell>
       {suspended && (
         <p className="mb-6 rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-center text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
           Your account has been suspended. Contact support if you think this is a mistake.
+        </p>
+      )}
+      {reset && (
+        <p className="mb-6 rounded-lg border border-emerald-300/60 bg-emerald-50 p-3 text-center text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+          Your password has been reset. Sign in with your new password.
         </p>
       )}
       <div className="text-center">
