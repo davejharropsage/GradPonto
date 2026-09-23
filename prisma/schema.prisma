@@ -371,3 +371,25 @@ model Activity {
   @@index([applicationId])
   @@index([dueDate])
 }
+
+// Records what an admin did, to whom. Deliberately NOT registered in scoped-db.ts's OWNED_MODELS —
+// this is an admin-wide table, not per-user data, on the same footing as User/Session. Only ever
+// written/read through the raw prisma client (src/lib/auth/admin.ts's adminDb), after requireAdmin().
+model AuditLog {
+  id     String @id @default(cuid())
+  action String // e.g. "user.suspend", "user.reinstate", "user.impersonate_start", "user.impersonate_stop"
+
+  actorId    String
+  // Denormalized so the log still reads sensibly even if the actor's account is later deleted.
+  actorEmail String
+
+  targetUserId String?
+  targetEmail  String?
+
+  detail String? // short free-text context, e.g. a reason
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([targetUserId])
+}

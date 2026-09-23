@@ -23,3 +23,22 @@ export async function requireAdmin() {
  * query goes through this, never through userDb(). Only ever call it after requireAdmin() has run.
  */
 export { prisma as adminDb };
+
+/** Records one admin action. Call this from every admin server action, right after it succeeds. */
+export function logAdminAction(
+  actor: { id: string; email: string },
+  action: string,
+  target?: { id: string; email: string } | null,
+  detail?: string
+) {
+  return prisma.auditLog.create({
+    data: {
+      actorId: actor.id,
+      actorEmail: actor.email,
+      action,
+      targetUserId: target?.id,
+      targetEmail: target?.email,
+      detail,
+    },
+  });
+}
