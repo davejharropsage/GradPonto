@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "postinstall": "prisma generate",
     "mail:test": "node --env-file=.env scripts/send-test-email.mjs",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/**/*.test.ts\"",
     "emails:export": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/export-email-templates.mjs"
