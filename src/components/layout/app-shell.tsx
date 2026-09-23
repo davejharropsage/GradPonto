@@ -38,7 +38,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
           <HeaderSearch />
         </div>
         <div className="flex-1 overflow-y-auto">
-          <SidebarNav />
+          <SidebarNav role={user.role} />
         </div>
       </aside>
 
@@ -60,7 +60,7 @@ export function AppShell({ children, user }: { children: React.ReactNode; user: 
               <div className="px-3 pt-3">
                 <HeaderSearch />
               </div>
-              <SidebarNav onNavigate={() => setMobileOpen(false)} />
+              <SidebarNav role={user.role} onNavigate={() => setMobileOpen(false)} />
             </SheetContent>
           </Sheet>
 

@@ -1,4 +1,5 @@
-import { Download } from "lucide-react";
+import { Download, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,14 @@ export default async function AccountPage() {
       <PageHeader title="Account" />
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">Your details</CardTitle>
+          {profile.role === "ADMIN" && (
+            <Link href="/admin" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Admin
+            </Link>
+          )}
         </CardHeader>
         <CardContent>
           <form action={updateProfile} className="grid gap-4">

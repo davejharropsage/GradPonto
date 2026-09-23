@@ -7,7 +7,7 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
   const user = await requireRegisteredUser();
 
   return (
-    <AppShell user={{ name: user.name, email: user.email, university: user.university, plan: user.plan }}>
+    <AppShell user={{ name: user.name, email: user.email, university: user.university, plan: user.plan, role: user.role }}>
       {children}
     </AppShell>
   );

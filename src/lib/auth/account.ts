@@ -3,13 +3,25 @@ import { prisma } from "@/lib/db";
 
 /** The only code outside the scoped client that touches the User table. */
 
+/** True if ADMIN_EMAILS (comma-separated, case-insensitive) lists this address. */
+function isAdminEmail(email: string): boolean {
+  const list = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return list.includes(email.toLowerCase());
+}
+
 /** Their email is proven: create the account if it's new, or find it, and note the sign-in. */
 export function upsertVerifiedUser(email: string) {
   const now = new Date();
+  // Only ever grants ADMIN, never sets USER explicitly — so removing an email from ADMIN_EMAILS
+  // (or leaving it blank) can't silently demote someone who was made an admin another way.
+  const role = isAdminEmail(email) ? ("ADMIN" as const) : undefined;
   return prisma.user.upsert({
     where: { email },
-    create: { email, emailVerifiedAt: now, lastLoginAt: now },
-    update: { emailVerifiedAt: now, lastLoginAt: now },
+    create: { email, emailVerifiedAt: now, lastLoginAt: now, ...(role && { role }) },
+    update: { emailVerifiedAt: now, lastLoginAt: now, ...(role && { role }) },
   });
 }
 

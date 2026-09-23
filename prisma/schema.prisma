@@ -47,6 +47,11 @@ enum Plan {
   PRO
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 // A registered person. Passwordless: they prove they own `email` by entering a
 // one-time code (see LoginCode). The account exists as soon as the email is
 // verified; `registeredAt` is set once they have also given their name and
@@ -62,6 +67,9 @@ model User {
   name            String?
   university      String?
   plan            Plan      @default(FREE)
+  // Set to ADMIN only ever by matching ADMIN_EMAILS on sign-in (see upsertVerifiedUser) — never
+  // set back to USER automatically, so it can't silently demote an admin managed another way later.
+  role            Role      @default(USER)
   emailVerifiedAt DateTime?
   registeredAt    DateTime?
   lastLoginAt     DateTime?

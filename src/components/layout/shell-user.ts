@@ -4,6 +4,7 @@ export interface ShellUser {
   email: string;
   university: string | null;
   plan: "FREE" | "PRO";
+  role: "USER" | "ADMIN";
 }
 
 export function initials(user: Pick<ShellUser, "name" | "email">) {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navSections, comingSoonLinks } from "./nav-links";
 
@@ -13,7 +14,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarNav({ role, onNavigate }: { role: "USER" | "ADMIN"; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -60,6 +61,27 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           );
         })}
       </div>
+
+      {role === "ADMIN" && (
+        <div className="flex flex-col gap-0.5">
+          <SectionLabel>Admin</SectionLabel>
+          <Link
+            href="/admin"
+            onClick={onNavigate}
+            aria-current={pathname.startsWith("/admin") ? "page" : undefined}
+            className={cn(
+              row,
+              pathname.startsWith("/admin") ? "bg-white/[0.13] text-white" : "text-white/75 hover:bg-white/[0.07] hover:text-white"
+            )}
+          >
+            <ShieldCheck
+              className={cn("h-[17px] w-[17px] shrink-0", pathname.startsWith("/admin") ? "text-[#79c5cd]" : "text-white/55 group-hover:text-white/85")}
+              strokeWidth={pathname.startsWith("/admin") ? 2.2 : 1.9}
+            />
+            Admin
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }
