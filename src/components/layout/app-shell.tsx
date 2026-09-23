@@ -12,6 +12,7 @@ import { HeaderSearch } from "./header-search";
 import { SidebarNav } from "./sidebar-nav";
 import { ThemeToggle } from "./theme-toggle";
 import { UpgradeButton } from "./upgrade-button";
+import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
 import type { ShellUser } from "./shell-user";
 
 export type { ShellUser } from "./shell-user";
@@ -21,61 +22,73 @@ export type { ShellUser } from "./shell-user";
  * on the right holding the plan control, theme toggle and account menu. Keeping account and
  * upgrade out of the sidebar gives the menu the full column height.
  */
-export function AppShell({ children, user }: { children: React.ReactNode; user: ShellUser }) {
+export function AppShell({
+  children,
+  user,
+  impersonation,
+}: {
+  children: React.ReactNode;
+  user: ShellUser;
+  impersonation?: { realEmail: string; targetEmail: string } | null;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen w-full">
-      <CommandPalette />
+    <div className="flex min-h-screen w-full flex-col">
+      {impersonation && <ImpersonationBanner realEmail={impersonation.realEmail} targetEmail={impersonation.targetEmail} />}
 
-      <aside className="dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex print:hidden">
-        <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border px-4">
-          <Link href="/" aria-label="GradPonto dashboard">
-            <Brand tone="light" size={30} />
-          </Link>
-        </div>
-        <div className="px-3 pt-3">
-          <HeaderSearch />
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <SidebarNav role={user.role} />
-        </div>
-      </aside>
+      <div className="flex min-h-0 w-full flex-1">
+        <CommandPalette />
 
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-card/90 px-3 backdrop-blur md:px-5 print:hidden">
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger
-              render={
-                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              }
-            />
-            <SheetContent side="left" className="dark w-64 bg-sidebar p-0 text-sidebar-foreground">
-              <SheetTitle className="sr-only">Navigation</SheetTitle>
-              <div className="flex h-14 items-center border-b border-sidebar-border px-4">
-                <Brand tone="light" size={30} />
-              </div>
-              <div className="px-3 pt-3">
-                <HeaderSearch />
-              </div>
-              <SidebarNav role={user.role} onNavigate={() => setMobileOpen(false)} />
-            </SheetContent>
-          </Sheet>
-
-          <Link href="/" className="md:hidden" aria-label="GradPonto dashboard">
-            <Brand size={28} />
-          </Link>
-
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-            <UpgradeButton plan={user.plan} />
-            <ThemeToggle />
-            <AccountMenu user={user} />
+        <aside className="dark sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex print:hidden">
+          <div className="flex h-14 shrink-0 items-center border-b border-sidebar-border px-4">
+            <Link href="/" aria-label="GradPonto dashboard">
+              <Brand tone="light" size={30} />
+            </Link>
           </div>
-        </header>
+          <div className="px-3 pt-3">
+            <HeaderSearch />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <SidebarNav role={user.role} />
+          </div>
+        </aside>
 
-        <main id="main-content" className="flex-1 p-4 md:p-6">{children}</main>
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-card/90 px-3 backdrop-blur md:px-5 print:hidden">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger
+                render={
+                  <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                }
+              />
+              <SheetContent side="left" className="dark w-64 bg-sidebar p-0 text-sidebar-foreground">
+                <SheetTitle className="sr-only">Navigation</SheetTitle>
+                <div className="flex h-14 items-center border-b border-sidebar-border px-4">
+                  <Brand tone="light" size={30} />
+                </div>
+                <div className="px-3 pt-3">
+                  <HeaderSearch />
+                </div>
+                <SidebarNav role={user.role} onNavigate={() => setMobileOpen(false)} />
+              </SheetContent>
+            </Sheet>
+
+            <Link href="/" className="md:hidden" aria-label="GradPonto dashboard">
+              <Brand size={28} />
+            </Link>
+
+            <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+              <UpgradeButton plan={user.plan} />
+              <ThemeToggle />
+              <AccountMenu user={user} />
+            </div>
+          </header>
+
+          <main id="main-content" className="flex-1 p-4 md:p-6">{children}</main>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { AdminTabs } from "@/components/admin/admin-tabs";
 import { SuspendUserButton } from "@/components/admin/suspend-user-button";
+import { ImpersonateButton } from "@/components/admin/impersonate-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -89,12 +90,17 @@ export default async function AdminPage() {
                   )}
                 </TableCell>
                 <TableCell>
-                  <SuspendUserButton
-                    userId={user.id}
-                    email={user.email}
-                    suspended={Boolean(user.suspendedAt)}
-                    isSelf={user.id === admin.id}
-                  />
+                  <div className="flex items-center gap-1">
+                    {user.role !== "ADMIN" && user.id !== admin.id && !user.suspendedAt && (
+                      <ImpersonateButton userId={user.id} />
+                    )}
+                    <SuspendUserButton
+                      userId={user.id}
+                      email={user.email}
+                      suspended={Boolean(user.suspendedAt)}
+                      isSelf={user.id === admin.id}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

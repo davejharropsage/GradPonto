@@ -6,6 +6,13 @@ export const AUTH = {
   sessionCookie: SESSION_COOKIE,
   /** Remembers which address the code was sent to, between the two sign-in steps. */
   emailCookie: "gp_signin_email",
+  /**
+   * Set only by an admin (see startImpersonation/stopImpersonation in src/lib/actions/admin.ts).
+   * Holds the impersonated user's id directly — not a credential itself; the admin's own
+   * already-authenticated sessionCookie is what authorizes it. requireAdmin() must never be
+   * influenced by this cookie (see requireUser() vs requireRegisteredUser() in src/lib/auth/user.ts).
+   */
+  impersonateCookie: "gp_impersonate",
   sessionDays: 30,
   codeLength: 6,
   codeTtlMinutes: 10,
