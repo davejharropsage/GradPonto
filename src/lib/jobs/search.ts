@@ -1,5 +1,6 @@
 import "server-only";
 import { isRateLimitedKey } from "@/lib/auth/rate-limit";
+import { prisma } from "@/lib/db";
 import { AdzunaError, adzunaConfigured, fetchAdzuna } from "./adzuna";
 import { rankListings, type JobListing } from "./listing";
 
@@ -61,6 +62,9 @@ export async function searchPlacements(userId: string, keywords: string[], locat
     const listings = rankListings(await fetchAdzuna(keywords, location), keywords);
     cache.set(key, { at: Date.now(), listings });
     if (cache.size > CACHE_MAX_ENTRIES) cache.delete(cache.keys().next().value as string);
+    // Durable, for the admin usage dashboard — only for a real (non-cached) call, since that's
+    // the shared allowance actually being spent.
+    await prisma.usageEvent.create({ data: { kind: "ADZUNA", userId } });
     return { ok: true, listings, fromCache: false };
   } catch (error) {
     console.error("Job search failed:", error instanceof AdzunaError ? error.message : "unexpected error");

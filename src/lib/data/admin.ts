@@ -51,3 +51,19 @@ export async function getAdminUserList() {
     },
   });
 }
+
+/** How much of the shared AI/Adzuna allowance has been used today and in the last hour. */
+export async function getUsageToday() {
+  await requireAdmin();
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const [aiToday, aiLastHour, adzunaToday, adzunaLastHour] = await Promise.all([
+    adminDb.usageEvent.count({ where: { kind: "AI", createdAt: { gte: startOfToday() } } }),
+    adminDb.usageEvent.count({ where: { kind: "AI", createdAt: { gte: hourAgo } } }),
+    adminDb.usageEvent.count({ where: { kind: "ADZUNA", createdAt: { gte: startOfToday() } } }),
+    adminDb.usageEvent.count({ where: { kind: "ADZUNA", createdAt: { gte: hourAgo } } }),
+  ]);
+  return {
+    ai: { today: aiToday, lastHour: aiLastHour },
+    adzuna: { today: adzunaToday, lastHour: adzunaLastHour },
+  };
+}

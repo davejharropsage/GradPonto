@@ -396,3 +396,16 @@ model AuditLog {
   @@index([createdAt])
   @@index([targetUserId])
 }
+
+// One row per shared-allowance call (a real Gemini request, a real non-cached Adzuna search),
+// so the admin usage dashboard can show today's totals durably — the in-process rate-limit
+// counters in src/lib/auth/rate-limit.ts reset on every restart and were never meant to answer
+// that. Deliberately NOT registered in scoped-db.ts's OWNED_MODELS, same reasoning as AuditLog.
+model UsageEvent {
+  id        String   @id @default(cuid())
+  kind      String // "AI" | "ADZUNA"
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([kind, createdAt])
+}
