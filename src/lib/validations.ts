@@ -47,6 +47,9 @@ export const activitySchema = z.object({
   type: z.enum(["INTERVIEW", "TASK", "NOTE", "FOLLOW_UP", "STATUS_CHANGE"]),
   subject: z.string().trim().min(1, "Subject is required"),
   notes: z.string().trim().optional().or(z.literal("")),
+  location: z.string().trim().optional().or(z.literal("")),
+  // A datetime-local value ("2026-09-22T14:30") when a time is set, a plain date ("2026-09-22")
+  // for the older date-only inputs, or blank.
   dueDate: z.string().trim().optional().or(z.literal("")),
   applicationId: z.string().trim().min(1),
 });

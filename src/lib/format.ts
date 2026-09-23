@@ -27,3 +27,22 @@ export function daysUntil(date: Date | string) {
 export function isOverdue(date: Date | string) {
   return daysUntil(date) < 0;
 }
+
+// Shows the time too, but only when one was actually set — a plain date (still stored as
+// midnight local time under the hood, from the older date-only inputs) just shows the date.
+export function formatDateTime(date: Date | string) {
+  const d = new Date(date);
+  const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0;
+  return hasTime
+    ? new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(d)
+    : formatDate(d);
+}
+
+// A <input type="datetime-local"> value in the browser's own local time. Using
+// `.toISOString()` here would shift the displayed time by the timezone offset, since that
+// formats in UTC.
+export function toDatetimeLocalValue(date: Date | string) {
+  const d = new Date(date);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

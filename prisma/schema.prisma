@@ -341,6 +341,9 @@ model Activity {
   type        ActivityType
   subject     String
   notes       String?
+  // Where it happens, e.g. "Zoom", "Microsoft Teams", or an office address — most useful for
+  // INTERVIEW, but not restricted to it (a TASK due "at the careers office" is fine too).
+  location    String?
   dueDate     DateTime?
   completedAt DateTime?
 

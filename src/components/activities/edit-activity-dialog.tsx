@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { updateActivity } from "@/lib/actions/activities";
 import { activityTypeLabels } from "@/lib/labels";
+import { toDatetimeLocalValue } from "@/lib/format";
 import type { Activity } from "@/generated/prisma/client";
 
 const editableTypes = Object.entries(activityTypeLabels).filter(([value]) => value !== "STATUS_CHANGE");
@@ -31,7 +32,7 @@ const editableTypes = Object.entries(activityTypeLabels).filter(([value]) => val
 export function EditActivityDialog({ activity }: { activity: Activity }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const dueDateValue = activity.dueDate ? new Date(activity.dueDate).toISOString().slice(0, 10) : "";
+  const dueDateValue = activity.dueDate ? toDatetimeLocalValue(activity.dueDate) : "";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -83,7 +84,11 @@ export function EditActivityDialog({ activity }: { activity: Activity }) {
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="edit-dueDate">Due date</Label>
-            <Input id="edit-dueDate" name="dueDate" type="date" defaultValue={dueDateValue} />
+            <Input id="edit-dueDate" name="dueDate" type="datetime-local" defaultValue={dueDateValue} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="edit-location">Location</Label>
+            <Input id="edit-location" name="location" placeholder="Zoom, Teams, an address..." defaultValue={activity.location ?? ""} />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="edit-notes">Notes</Label>

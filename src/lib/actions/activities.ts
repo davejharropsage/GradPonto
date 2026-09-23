@@ -25,6 +25,7 @@ export async function createActivity(formData: FormData) {
       type: parsed.type,
       subject: parsed.subject,
       notes: toNullable(parsed.notes),
+      location: toNullable(parsed.location),
       dueDate: toDate(parsed.dueDate),
       applicationId: parsed.applicationId,
     },
@@ -44,6 +45,7 @@ export async function updateActivity(id: string, formData: FormData) {
       type: parsed.type,
       subject: parsed.subject,
       notes: toNullable(parsed.notes),
+      location: toNullable(parsed.location),
       dueDate: toDate(parsed.dueDate),
     },
   });

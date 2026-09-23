@@ -45,7 +45,8 @@ export function ActivityForm({ applicationId }: { applicationId: string }) {
       </div>
 
       <Input name="subject" placeholder="Subject" required className="flex-1" />
-      <Input name="dueDate" type="date" className="w-full sm:w-40" />
+      <Input name="location" placeholder="Location" className="w-full sm:w-36" />
+      <Input name="dueDate" type="datetime-local" className="w-full sm:w-52" />
       <Button type="submit" size="sm">
         Log
       </Button>
