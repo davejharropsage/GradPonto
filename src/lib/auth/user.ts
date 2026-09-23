@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { getSessionUser } from "./session";
+import { getSessionUser, destroySession } from "./session";
 import { scopedDb } from "./scoped-db";
 
 /**
@@ -14,6 +14,13 @@ import { scopedDb } from "./scoped-db";
 export async function requireUser() {
   const user = await getSessionUser();
   if (!user) redirect("/signin");
+  // A suspended user is signed out on their very next request, not just blocked from a new
+  // sign-in — suspendUser() also proactively deletes their Sessions, so this is a fallback for
+  // whenever that hasn't reached them yet (e.g. a tab left open).
+  if (user.suspendedAt) {
+    await destroySession();
+    redirect("/signin?suspended=1");
+  }
   return user;
 }
 
@@ -46,6 +53,6 @@ export const userDb = cache(async () => {
  */
 export async function getApiContext() {
   const user = await getSessionUser();
-  if (!user || !user.registeredAt) return null;
+  if (!user || !user.registeredAt || user.suspendedAt) return null;
   return { user, db: scopedDb(user.id) };
 }

@@ -73,6 +73,9 @@ model User {
   emailVerifiedAt DateTime?
   registeredAt    DateTime?
   lastLoginAt     DateTime?
+  // Set by an admin (suspendUser in src/lib/actions/admin.ts). A suspended user is signed out
+  // immediately (their Sessions are deleted) and any further sign-in attempt is blocked.
+  suspendedAt     DateTime?
 
   sessions     Session[]
   employers    Employer[]

@@ -8,3 +8,46 @@ export async function getAuditLog(limit = 200) {
     take: limit,
   });
 }
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function startOfWeek() {
+  const d = startOfToday();
+  d.setDate(d.getDate() - 6);
+  return d;
+}
+
+/** Total users, plus how many registered today and in the last 7 days. */
+export async function getAdminOverview() {
+  await requireAdmin();
+  const [total, today, thisWeek] = await Promise.all([
+    adminDb.user.count(),
+    adminDb.user.count({ where: { registeredAt: { gte: startOfToday() } } }),
+    adminDb.user.count({ where: { registeredAt: { gte: startOfWeek() } } }),
+  ]);
+  return { total, today, thisWeek };
+}
+
+/** Every registered user, newest first, with an application count for an at-a-glance activity signal. */
+export async function getAdminUserList() {
+  await requireAdmin();
+  return adminDb.user.findMany({
+    where: { registeredAt: { not: null } },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      university: true,
+      role: true,
+      registeredAt: true,
+      lastLoginAt: true,
+      suspendedAt: true,
+      _count: { select: { applications: true } },
+    },
+  });
+}
