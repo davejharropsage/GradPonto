@@ -24,12 +24,9 @@ export function HealthCheckTab({
   function handleReview() {
     if (!cvContent.trim()) return;
     startTransition(async () => {
-      try {
-        const check = await reviewCvHealth(cvContent);
-        setResult(check);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to review CV");
-      }
+      const result = await reviewCvHealth(cvContent);
+      if (!result.ok) toast.error(result.error);
+      else setResult(result.data);
     });
   }
 

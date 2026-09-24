@@ -76,23 +76,28 @@ export function ApplicationForm({
       return;
     }
     startAutofill(async () => {
-      try {
-        const { text } = await fetchJobFromUrl(jobUrl.trim());
-        setDescription(text);
+      const fetched = await fetchJobFromUrl(jobUrl.trim());
+      if (!fetched.ok) {
+        toast.error(fetched.error);
+        return;
+      }
+      setDescription(fetched.data.text);
 
-        if (aiAvailable) {
-          const fields = await analyzeJob(text);
-          if (fields.title) setTitle(fields.title);
-          if (fields.company) setCompany(fields.company);
-          if (fields.location) setLocation(fields.location);
-          if (fields.salary) setSalary(fields.salary);
-          if (fields.deadline) setDeadline(fields.deadline);
-          toast.success("Filled in from the job listing. Review before saving.");
-        } else {
-          toast.success("Pulled the job description. Add an GEMINI_API_KEY to auto-fill the other fields too.");
+      if (aiAvailable) {
+        const analysis = await analyzeJob(fetched.data.text);
+        if (!analysis.ok) {
+          toast.error(analysis.error);
+          return;
         }
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Couldn't read that URL");
+        const fields = analysis.data;
+        if (fields.title) setTitle(fields.title);
+        if (fields.company) setCompany(fields.company);
+        if (fields.location) setLocation(fields.location);
+        if (fields.salary) setSalary(fields.salary);
+        if (fields.deadline) setDeadline(fields.deadline);
+        toast.success("Filled in from the job listing. Review before saving.");
+      } else {
+        toast.success("Pulled the job description. Add an GEMINI_API_KEY to auto-fill the other fields too.");
       }
     });
   }

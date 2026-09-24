@@ -24,24 +24,21 @@ export function AnalyseJobForm({ aiAvailable }: { aiAvailable: boolean }) {
   function handleAutofill() {
     if (!url.trim()) return;
     startAutofill(async () => {
-      try {
-        const { text: fetched } = await fetchJobFromUrl(url.trim());
-        setText(fetched);
-        toast.success("Pulled the page text. Review it below before analysing.");
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Could not fetch that URL");
+      const fetched = await fetchJobFromUrl(url.trim());
+      if (!fetched.ok) {
+        toast.error(fetched.error);
+        return;
       }
+      setText(fetched.data.text);
+      toast.success("Pulled the page text. Review it below before analysing.");
     });
   }
 
   function handleAnalyse() {
     startAnalyse(async () => {
-      try {
-        const analysis = await analyzeJob(text);
-        setResult(analysis);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to analyse job");
-      }
+      const result = await analyzeJob(text);
+      if (!result.ok) toast.error(result.error);
+      else setResult(result.data);
     });
   }
 

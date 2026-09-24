@@ -37,12 +37,9 @@ export function JobMatchTab({
   function handleAnalyse() {
     if (!cvContent.trim() || !applicationId) return;
     startTransition(async () => {
-      try {
-        const match = await matchCv({ cvContent, applicationId });
-        setResult(match);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to analyse CV");
-      }
+      const result = await matchCv({ cvContent, applicationId });
+      if (!result.ok) toast.error(result.error);
+      else setResult(result.data);
     });
   }
 

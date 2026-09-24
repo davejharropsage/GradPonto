@@ -44,12 +44,9 @@ export function AtsTab({
   function handleCheck() {
     if (!cvContent.trim() || !applicationId) return;
     startTransition(async () => {
-      try {
-        const kw = await getAtsKeywords(applicationId);
-        setKeywords(kw);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to extract keywords");
-      }
+      const result = await getAtsKeywords(applicationId);
+      if (!result.ok) toast.error(result.error);
+      else setKeywords(result.data);
     });
   }
 
