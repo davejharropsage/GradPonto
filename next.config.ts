@@ -1,10 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // These do Node-specific things (ws opens real sockets; @neondatabase/serverless and the Prisma
-  // adapter built on it aren't meant to be bundled) that Next's server bundler can mishandle —
-  // keeping them as plain Node `require`s avoids bundling-related runtime failures on Vercel.
-  serverExternalPackages: ["ws", "@neondatabase/serverless", "@prisma/adapter-neon"],
+  // pg opens real Node sockets, which Next's server bundler can mishandle — keeping it (and the
+  // Prisma adapter built on it) as a plain Node `require` avoids bundling-related runtime failures.
+  serverExternalPackages: ["pg", "@prisma/adapter-pg"],
 };
 
 export default nextConfig;

@@ -1,19 +1,18 @@
-import { neonConfig } from "@neondatabase/serverless";
-import { PrismaNeon } from "@prisma/adapter-neon";
-import ws from "ws";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
-
-// The generated client has no native query engine at all (see engineType = "client" in
-// schema.prisma) — it runs queries through this driver adapter instead. Neon's serverless driver
-// talks WebSocket, which Node needs a ws-backed constructor for (browsers/edge have one built in).
-neonConfig.webSocketConstructor = ws;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 function createClient() {
-  const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
+  // Plain TCP Postgres (node-postgres), not the WebSocket-based Neon serverless driver we tried
+  // first: that route (@prisma/adapter-neon + ws) kept throwing a malformed, non-Error object on
+  // Vercel specifically — a known rough edge with ws's optional native addons not surviving
+  // serverless bundling — even though the exact same connection string worked fine locally. Plain
+  // `pg` talks ordinary TCP, which has none of that; Neon's pooled connection string (PgBouncer,
+  // already what DATABASE_URL points at) works with it exactly as it would with any other host.
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   return new PrismaClient({ adapter });
 }
 
