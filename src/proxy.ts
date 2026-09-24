@@ -11,7 +11,16 @@ import { SESSION_COOKIE } from "@/lib/auth/constants";
  */
 
 // Reachable without signing in.
-const PUBLIC = [/^\/landing(\/|$)/, /^\/signin(\/|$)/, /^\/privacy$/, /^\/terms$/, /^\/dev\/outbox$/];
+const PUBLIC = [
+  /^\/landing(\/|$)/,
+  /^\/signin(\/|$)/,
+  /^\/signup(\/|$)/,
+  /^\/forgot-password$/,
+  /^\/reset-password$/,
+  /^\/privacy$/,
+  /^\/terms$/,
+  /^\/dev\/outbox$/,
+];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
