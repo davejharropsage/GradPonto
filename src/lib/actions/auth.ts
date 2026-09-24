@@ -11,9 +11,11 @@ import {
   findUserForSignIn,
   recordSignIn,
   resetPassword,
+  verifyAndLinkOAuthAccount,
 } from "@/lib/auth/account";
 import { issueLoginCode, verifyLoginCode } from "@/lib/auth/codes";
 import { createSession, destroySession } from "@/lib/auth/session";
+import { OAUTH_COOKIES, readPendingLink } from "@/lib/auth/oauth";
 import { requireUser } from "@/lib/auth/user";
 import { sendMail } from "@/lib/auth/mailer";
 import { verifyEmailCodeEmail, resetPasswordCodeEmail, welcomeEmail } from "@/lib/auth/email-templates";
@@ -48,6 +50,11 @@ async function rememberEmail(email: string) {
     path: "/",
     maxAge: AUTH.emailCookieMinutes * 60,
   });
+}
+
+/** Drops a half-finished "Continue with Google/Microsoft" so a later, unrelated signup can't link it. */
+async function forgetPendingOAuth() {
+  (await cookies()).delete(OAUTH_COOKIES.pending);
 }
 
 async function pendingEmail(): Promise<string | null> {
@@ -137,6 +144,7 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
     return { error: "Too many attempts. Please wait a few minutes and try again." };
   }
 
+  await forgetPendingOAuth();
   const user = await upsertPendingSignup(email, hashPassword(password));
   if (!user) {
     return { error: "That email already has an account. Try signing in, or use “Forgot password?” instead." };
@@ -159,7 +167,11 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
   redirect("/signup/verify");
 }
 
-/** Step 2: the verification code. On success the account is verified and signed in. */
+/**
+ * Step 2: the verification code. On success the account is verified and signed in. If they came
+ * from "Continue with Google/Microsoft", this is also where the account is created (if new) and
+ * the provider account linked, so they never need a code for it again.
+ */
 export async function verifySignupAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const email = await pendingEmail();
   if (!email) redirect("/signup");
@@ -179,9 +191,19 @@ export async function verifySignupAction(_prev: AuthFormState, formData: FormDat
     return { error: messages[result.reason] };
   }
 
-  const user = await markEmailVerified(email);
+  const store = await cookies();
+  const oauth = readPendingLink(store.get(OAUTH_COOKIES.pending)?.value);
+  const user =
+    oauth && oauth.email === email
+      ? await verifyAndLinkOAuthAccount(email, oauth.provider, oauth.sub)
+      : await markEmailVerified(email);
+  store.delete(OAUTH_COOKIES.pending);
+  store.delete(AUTH.emailCookie);
+
+  if (user.suspendedAt) {
+    return { error: "Your account has been suspended. Contact support if you think this is a mistake." };
+  }
   await createSession(user.id);
-  (await cookies()).delete(AUTH.emailCookie);
 
   redirect(user.registeredAt ? "/" : "/welcome");
 }
@@ -214,6 +236,7 @@ export async function resendSignupCodeAction(): Promise<AuthFormState> {
 /** "Use a different email" on the signup verify step. */
 export async function changeSignupEmailAction() {
   (await cookies()).delete(AUTH.emailCookie);
+  await forgetPendingOAuth();
   redirect("/signup");
 }
 

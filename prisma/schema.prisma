@@ -87,7 +87,8 @@ model User {
   // immediately (their Sessions are deleted) and any further sign-in attempt is blocked.
   suspendedAt     DateTime?
 
-  sessions     Session[]
+  sessions      Session[]
+  oauthAccounts OAuthAccount[]
   employers    Employer[]
   applications Application[]
   documents    Document[]
@@ -100,6 +101,22 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// A "Continue with Google/Microsoft" login linked to a User. Created only after the email the
+// provider reported has been confirmed with a signup code (see verifySignupAction), so a provider
+// that hands out unverified email claims can't be used to take over someone else's account.
+// After that, signing in with the same provider account skips the code entirely.
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  provider          String // "google" | "microsoft"
+  providerAccountId String // the provider's stable `sub` for this person
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 // A signed-in browser. The cookie holds a random token; only its SHA-256 hash

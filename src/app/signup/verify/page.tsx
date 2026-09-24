@@ -6,6 +6,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { CodeForm } from "@/components/auth/code-form";
 import { AUTH } from "@/lib/auth/config";
 import { mailMode } from "@/lib/auth/mailer";
+import { OAUTH_COOKIES, readPendingLink } from "@/lib/auth/oauth";
 import { signedInDestination } from "@/lib/auth/user";
 import { changeSignupEmailAction, resendSignupCodeAction, verifySignupAction } from "@/lib/actions/auth";
 
@@ -16,8 +17,13 @@ export default async function SignUpVerifyPage() {
   if (destination) redirect(destination);
 
   // No address to verify (cookie expired, or someone came straight here): start again.
-  const email = (await cookies()).get(AUTH.emailCookie)?.value;
+  const store = await cookies();
+  const email = store.get(AUTH.emailCookie)?.value;
   if (!email) redirect("/signup");
+
+  // Arrived from "Continue with Google/Microsoft": say why there's still a code to enter.
+  const oauth = readPendingLink(store.get(OAUTH_COOKIES.pending)?.value);
+  const providerName = oauth?.email === email ? { google: "Google", microsoft: "Microsoft" }[oauth.provider] : null;
 
   const devInbox = process.env.NODE_ENV !== "production" && mailMode() === "dev-outbox";
 
@@ -29,6 +35,12 @@ export default async function SignUpVerifyPage() {
           We sent a 6-digit code to <strong className="break-words text-[#202128]">{email}</strong>. It expires in{" "}
           {AUTH.codeTtlMinutes} minutes.
         </p>
+        {providerName && (
+          <p className="mt-2 text-sm text-[#62646d]">
+            This confirms your email once, to finish creating your account with {providerName}. After this, you can
+            sign in with {providerName} directly.
+          </p>
+        )}
       </div>
 
       <div className="mt-8">

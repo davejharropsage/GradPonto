@@ -20,6 +20,7 @@ const PUBLIC = [
   /^\/privacy$/,
   /^\/terms$/,
   /^\/dev\/outbox$/,
+  /^\/api\/auth\/oauth\//,
 ];
 
 export function proxy(request: NextRequest) {

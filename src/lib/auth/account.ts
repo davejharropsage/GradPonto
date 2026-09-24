@@ -50,6 +50,50 @@ export function markEmailVerified(email: string) {
   return prisma.user.update({ where: { email }, data: { emailVerifiedAt: now, lastLoginAt: now } });
 }
 
+/** The user a Google/Microsoft account has already been linked to, if any (for sign-in without a code). */
+export async function findUserByOAuthAccount(provider: string, providerAccountId: string) {
+  const link = await prisma.oAuthAccount.findUnique({
+    where: { provider_providerAccountId: { provider, providerAccountId } },
+    select: { user: { select: { id: true, registeredAt: true, suspendedAt: true } } },
+  });
+  return link?.user ?? null;
+}
+
+/**
+ * Called once the email a provider reported has been confirmed with a signup code: creates the
+ * account (or verifies the existing one) and links the provider account to it, so later sign-ins
+ * with it need no code.
+ *
+ * If the account existed but its email had never been verified, its password is cleared: that
+ * password was set by whoever started that unfinished signup, which may not be the person who
+ * has just proved they own the inbox. They can set one with "Forgot password?" if they want one.
+ */
+export function verifyAndLinkOAuthAccount(email: string, provider: string, providerAccountId: string) {
+  // One transaction, so a failure part-way can't leave a verified account with no link (or the
+  // other way round).
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.user.findUnique({ where: { email }, select: { emailVerifiedAt: true } });
+    const now = new Date();
+    const role = isAdminEmail(email) ? ("ADMIN" as const) : undefined;
+    const user = await tx.user.upsert({
+      where: { email },
+      create: { email, emailVerifiedAt: now, lastLoginAt: now, ...(role && { role }) },
+      update: {
+        emailVerifiedAt: now,
+        lastLoginAt: now,
+        ...(role && { role }),
+        ...(existing && !existing.emailVerifiedAt && { passwordHash: null }),
+      },
+    });
+    await tx.oAuthAccount.upsert({
+      where: { provider_providerAccountId: { provider, providerAccountId } },
+      create: { provider, providerAccountId, userId: user.id },
+      update: {},
+    });
+    return user;
+  });
+}
+
 /** Looks a signed-in candidate up by email for signInAction. Only the fields it needs to decide. */
 export function findUserForSignIn(email: string) {
   return prisma.user.findUnique({

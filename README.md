@@ -161,18 +161,39 @@ On **Pipeline**, pick a card up and drop it in another column to change its stat
 
 ## Accounts & sign-in
 
-There are no passwords. The flow:
+Two ways in, both on `/signin` and `/signup`:
 
-1. **Landing page > Get started free** (top right) leads to `/signin`.
-2. Enter an email. A 6-digit code is emailed (valid 10 minutes, single use).
-3. Enter the code. If that email **already has an account**, you're signed straight in. If it's **new**, you continue to `/welcome`.
-4. `/welcome` asks for **name and university**. Completing it creates the registered account, signs you into the app, and sends a confirmation email.
+- **Email and password.** `/signup` takes an email and password, emails a 6-digit code (valid 10 minutes, single use) and the account is verified once the code is entered on `/signup/verify`. After that, `/signin` is just email and password. `/forgot-password` resets it with another emailed code.
+- **Continue with Google / Microsoft.** The first time a Google or Microsoft account is used, a 6-digit code is emailed to the address it reported and entered on the same `/signup/verify` page. That creates the account (or, if the email already has one, links to it). Every later sign-in with that Google/Microsoft account goes straight in with no code. Apple is shown as "Soon" (it needs a paid Apple Developer membership).
 
-The Google / Microsoft / Apple / ChatGPT buttons on `/signin` are placeholders marked "Soon". Only email works today.
+Either way, a new account then goes to `/welcome` for **name and university**, which completes registration and sends a confirmation email.
 
 ### Setup
 
-Copy `.env.example` to `.env` and set at least `AUTH_SECRET` (random, 32+ characters; the file explains how to generate one) and `APP_URL`. `DATABASE_URL` must still be an absolute path (see ARCHITECTURE.md).
+Copy `.env.example` to `.env` and set at least `DATABASE_URL` (a Postgres connection string), `AUTH_SECRET` (random, 32+ characters; the file explains how to generate one) and `APP_URL`.
+
+### Continue with Google / Microsoft
+
+Each button stays greyed out until both of its keys are set. The code is in `src/lib/auth/oauth.ts`, `src/lib/auth/oauth-core.ts` and `src/app/api/auth/oauth/[provider]/`. Linked accounts are stored in the `OAuthAccount` table.
+
+Each provider needs a **redirect URI** registered: `APP_URL` + `/api/auth/oauth/<provider>/callback`. Register both the local and the live one:
+
+- `http://localhost:3000/api/auth/oauth/google/callback` and `https://grad-ponto.vercel.app/api/auth/oauth/google/callback`
+- the same two with `microsoft` in place of `google`
+
+Vercel preview deployments use the live `APP_URL`, so provider sign-in on a preview URL sends you back to the live site. Test it locally or on production.
+
+**Google** ([Google Cloud Console](https://console.cloud.google.com/)):
+1. Create a project, then **APIs & Services → OAuth consent screen**: user type *External*, app name *GradPonto*, support email, and the scopes `openid`, `email` and `profile`. While it's in *Testing* mode only the test users you list can sign in; **Publish app** to open it to everyone. The basic scopes don't need Google's review.
+2. **APIs & Services → Credentials → Create credentials → OAuth client ID**, type *Web application*. Add both redirect URIs above.
+3. Copy the client ID and secret into `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+**Microsoft** ([Microsoft Entra admin center](https://entra.microsoft.com/) → **App registrations → New registration**):
+1. Supported account types: *Accounts in any organizational directory and personal Microsoft accounts*. Redirect URI: platform *Web*, with the localhost URI. Add the live one afterwards under **Authentication**.
+2. Copy the *Application (client) ID* into `MICROSOFT_CLIENT_ID`.
+3. **Certificates & secrets → New client secret**, then copy its **Value** (not the Secret ID) into `MICROSOFT_CLIENT_SECRET`. Secrets expire (the maximum is 2 years), so note the date.
+
+For the live site, add the same four variables in Vercel (**Settings → Environment Variables**) and redeploy.
 
 ### Email
 
