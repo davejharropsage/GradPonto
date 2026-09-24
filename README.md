@@ -178,7 +178,7 @@ Each button stays greyed out until both of its keys are set. The code is in `src
 
 Each provider needs a **redirect URI** registered: `APP_URL` + `/api/auth/oauth/<provider>/callback`. Register both the local and the live one:
 
-- `http://localhost:3000/api/auth/oauth/google/callback` and `https://grad-ponto.vercel.app/api/auth/oauth/google/callback`
+- `http://localhost:3000/api/auth/oauth/google/callback` and `https://gradponto.com/api/auth/oauth/google/callback`
 - the same two with `microsoft` in place of `google`
 
 Vercel preview deployments use the live `APP_URL`, so provider sign-in on a preview URL sends you back to the live site. Test it locally or on production.
