@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { navSections, comingSoonLinks } from "./nav-links";
+import { navSections } from "./nav-links";
 
 const row = "group relative flex h-9 items-center gap-3 rounded-lg px-3 text-[13.5px] font-semibold transition-colors";
 
@@ -47,20 +47,6 @@ export function SidebarNav({ role, onNavigate }: { role: "USER" | "ADMIN"; onNav
           {index === 0 && <div className="mx-1 mt-2 h-px bg-white/10" />}
         </div>
       ))}
-
-      <div className="flex flex-col gap-0.5">
-        <SectionLabel>Insights</SectionLabel>
-        {comingSoonLinks.map((link) => {
-          const Icon = link.icon;
-          return (
-            <div key={link.label} className={cn(row, "cursor-not-allowed text-white/35")} aria-disabled="true">
-              <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={1.9} />
-              <span className="flex-1">{link.label}</span>
-              <span className="rounded-full border border-white/20 px-1.5 py-px text-[10px] font-bold text-white/50">Soon</span>
-            </div>
-          );
-        })}
-      </div>
 
       {role === "ADMIN" && (
         <div className="flex flex-col gap-0.5">

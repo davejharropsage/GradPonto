@@ -6,7 +6,6 @@ import {
   Sparkles,
   FileCheck2,
   Building2,
-  BarChart3,
   Target,
   Telescope,
 } from "lucide-react";
@@ -37,6 +36,3 @@ export const navSections = [
     ],
   },
 ] as const;
-
-// Not built yet: shown disabled with a "Soon" badge, matching the product roadmap.
-export const comingSoonLinks = [{ label: "Analytics", icon: BarChart3 }];
