@@ -83,9 +83,13 @@ model User {
   emailVerifiedAt DateTime?
   registeredAt    DateTime?
   lastLoginAt     DateTime?
-  // Set by an admin (suspendUser in src/lib/actions/admin.ts). A suspended user is signed out
-  // immediately (their Sessions are deleted) and any further sign-in attempt is blocked.
+  // Set either by an admin (suspendUser) or by the user pausing their own account (pauseOwnAccount).
+  // Either way the user is signed out immediately (Sessions deleted) and blocked from signing back
+  // in — but a self-paused account (suspendedUntil set) is silently reinstated the moment its owner
+  // signs back in with the right password (see signInAction); an admin suspension (suspendedUntil
+  // null) is never lifted that way, only by an admin.
   suspendedAt     DateTime?
+  suspendedUntil  DateTime?
 
   sessions      Session[]
   oauthAccounts OAuthAccount[]

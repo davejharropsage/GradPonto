@@ -9,7 +9,9 @@ export async function suspendUser(userId: string) {
   const admin = await requireAdmin();
   if (userId === admin.id) throw new Error("You can't suspend your own account.");
 
-  const target = await adminDb.user.update({ where: { id: userId }, data: { suspendedAt: new Date() } });
+  // suspendedUntil: null makes this an admin (indefinite) suspension, distinct from a user's own
+  // 30-day pause (pauseOwnAccount) — only an admin can lift this one, via reinstateUser below.
+  const target = await adminDb.user.update({ where: { id: userId }, data: { suspendedAt: new Date(), suspendedUntil: null } });
   // Belt and braces: don't wait for their next request to hit the suspendedAt check.
   await adminDb.session.deleteMany({ where: { userId } });
   await logAdminAction(admin, "user.suspend", { id: target.id, email: target.email });
@@ -19,7 +21,7 @@ export async function suspendUser(userId: string) {
 
 export async function reinstateUser(userId: string) {
   const admin = await requireAdmin();
-  const target = await adminDb.user.update({ where: { id: userId }, data: { suspendedAt: null } });
+  const target = await adminDb.user.update({ where: { id: userId }, data: { suspendedAt: null, suspendedUntil: null } });
   await logAdminAction(admin, "user.reinstate", { id: target.id, email: target.email });
 
   revalidatePath("/admin");

@@ -138,12 +138,11 @@ export default function PrivacyPage() {
           <li>You can correct your name and university yourself on the Account page at any time.</li>
           <li>You can download a complete copy of your data from the Account page at any time.</li>
           <li>
-            To have your account and everything in it deleted, email{" "}
-            <a href="mailto:privacy@gradponto.com" className="underline">
-              privacy@gradponto.com
-            </a>{" "}
-            from your account&apos;s email address; we will confirm once it&apos;s done (self-service deletion isn&apos;t
-            built into the app yet).
+            You can delete your account and everything in it yourself, immediately and permanently, from the Account
+            page &mdash; no need to contact us. If you&apos;d rather keep the option to come back, the Account page
+            also lets you pause your account for 30 days instead: you&apos;re signed out everywhere straight away,
+            and signing back in with your password at any point during those 30 days undoes it and picks up exactly
+            where you left off.
           </li>
           <li>
             For any other request, or a question about how your data is handled, use the same address. We will respond
