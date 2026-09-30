@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RestoreBackupForm } from "@/components/settings/restore-backup-form";
+import { DangerZone } from "@/components/account/danger-zone";
 import { getProfile } from "@/lib/data/profile";
 import { updateProfile, setPlan } from "@/lib/actions/profile";
 
@@ -33,7 +34,7 @@ export default async function AccountPage() {
             <div className="grid gap-1.5">
               <Label htmlFor="email">Email</Label>
               <Input id="email" value={profile.email} readOnly disabled />
-              <p className="text-xs text-muted-foreground">You sign in with a one-time code sent to this address.</p>
+              <p className="text-xs text-muted-foreground">You sign in with this address and your password.</p>
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="name">Name</Label>
@@ -70,6 +71,21 @@ export default async function AccountPage() {
               {profile.plan === "PRO" ? "Switch to Free" : "Upgrade to Pro"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Pause or delete your account</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Taking a break? Pause your account for 30 days — you&apos;re signed out everywhere right away, and signing
+            back in with your password at any point undoes it. Want to leave for good? Deleting is immediate and
+            permanent: your account and everything in it (applications, employers, documents, notes and goals) is
+            gone straight away and can&apos;t be recovered.
+          </p>
+          <DangerZone email={profile.email} />
         </CardContent>
       </Card>
 

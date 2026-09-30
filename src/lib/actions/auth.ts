@@ -11,6 +11,7 @@ import {
   findUserForSignIn,
   recordSignIn,
   resetPassword,
+  liftSelfPause,
 } from "@/lib/auth/account";
 import { issueLoginCode, verifyLoginCode } from "@/lib/auth/codes";
 import { createSession, destroySession } from "@/lib/auth/session";
@@ -106,7 +107,11 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
   }
 
   if (user.suspendedAt) {
-    return { error: "Your account has been suspended. Contact support if you think this is a mistake." };
+    if (!user.suspendedUntil) {
+      return { error: "Your account has been suspended. Contact support if you think this is a mistake." };
+    }
+    // Self-paused, not an admin suspension: the right password is how you undo a pause.
+    await liftSelfPause(user.id);
   }
 
   await recordSignIn(user.id);

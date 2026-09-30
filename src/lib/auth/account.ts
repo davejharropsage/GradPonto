@@ -54,7 +54,7 @@ export function markEmailVerified(email: string) {
 export function findUserForSignIn(email: string) {
   return prisma.user.findUnique({
     where: { email },
-    select: { id: true, passwordHash: true, emailVerifiedAt: true, registeredAt: true, suspendedAt: true },
+    select: { id: true, passwordHash: true, emailVerifiedAt: true, registeredAt: true, suspendedAt: true, suspendedUntil: true },
   });
 }
 
@@ -96,4 +96,30 @@ export function updateProfileDetails(userId: string, details: { name: string; un
 
 export function updatePlan(userId: string, plan: "FREE" | "PRO") {
   return prisma.user.update({ where: { id: userId }, data: { plan } });
+}
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * The self-service equivalent of suspendUser() (src/lib/actions/admin.ts): signs the account out
+ * everywhere and blocks sign-in, but — unlike an admin suspension — signing back in with the right
+ * password lifts it immediately (see signInAction), whether or not the 30 days are up. suspendedUntil
+ * being set is what tells signInAction this is a self-pause rather than an admin action.
+ */
+export async function pauseOwnAccount(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { suspendedAt: new Date(), suspendedUntil: new Date(Date.now() + THIRTY_DAYS_MS) },
+  });
+  await prisma.session.deleteMany({ where: { userId } });
+}
+
+/** Lifts a self-pause (see pauseOwnAccount) on a successful sign-in. Never touches an admin suspension. */
+export function liftSelfPause(userId: string) {
+  return prisma.user.update({ where: { id: userId }, data: { suspendedAt: null, suspendedUntil: null } });
+}
+
+/** Permanently deletes the account. Everything else it owns cascades with it (see schema.prisma). */
+export function deleteOwnAccount(userId: string) {
+  return prisma.user.delete({ where: { id: userId } });
 }
