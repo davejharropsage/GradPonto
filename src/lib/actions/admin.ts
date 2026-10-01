@@ -2,8 +2,52 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { z } from "zod";
 import { requireAdmin, adminDb, logAdminAction } from "@/lib/auth/admin";
 import { AUTH, cookiesAreSecure } from "@/lib/auth/config";
+import { createUserByAdmin } from "@/lib/auth/account";
+import { hashPassword, passwordSchema } from "@/lib/auth/password";
+
+export type AdminFormState = { error?: string } | undefined;
+
+const createUserSchema = z
+  .object({
+    email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
+    password: passwordSchema,
+    confirmPassword: z.string(),
+    name: z.string().trim().min(1, "Enter a name.").max(80),
+    university: z.string().trim().min(1, "Enter a university.").max(120),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Those passwords don't match.",
+    path: ["confirmPassword"],
+  });
+
+/**
+ * Admin-only: create an account directly, for beta testers or as an override for someone who
+ * can't get through the normal signup flow. Skips email verification entirely — an admin setting
+ * the password is treated as proof of the address, the same trust level as a verified code.
+ * Returns undefined on success (the caller treats that as "done"), {error} otherwise.
+ */
+export async function createUserAction(formData: FormData): Promise<AdminFormState> {
+  const admin = await requireAdmin();
+
+  const parsed = createUserSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+    name: formData.get("name"),
+    university: formData.get("university"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the details and try again." };
+  const { email, password, name, university } = parsed.data;
+
+  const user = await createUserByAdmin(email, hashPassword(password), { name, university });
+  if (!user) return { error: "That email already has an account." };
+
+  await logAdminAction(admin, "user.create", { id: user.id, email: user.email });
+  revalidatePath("/admin");
+}
 
 export async function suspendUser(userId: string) {
   const admin = await requireAdmin();

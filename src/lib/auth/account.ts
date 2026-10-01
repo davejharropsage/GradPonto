@@ -167,3 +167,24 @@ export function liftSelfPause(userId: string) {
 export function deleteOwnAccount(userId: string) {
   return prisma.user.delete({ where: { id: userId } });
 }
+
+/**
+ * Admin-created account (beta testers, or an override for someone who can't complete the normal
+ * flow) — an admin vouching for the address is enough, so this skips email verification entirely:
+ * the account is created already verified and registered, ready to sign in immediately with the
+ * password the admin set. Returns null if the email already has an account, so the caller can
+ * show that rather than silently overwriting an existing password.
+ */
+export async function createUserByAdmin(
+  email: string,
+  passwordHash: string,
+  details: { name: string; university: string }
+) {
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (existing) return null;
+
+  const now = new Date();
+  return prisma.user.create({
+    data: { email, passwordHash, emailVerifiedAt: now, registeredAt: now, ...details },
+  });
+}

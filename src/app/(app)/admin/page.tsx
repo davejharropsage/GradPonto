@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { AdminTabs } from "@/components/admin/admin-tabs";
 import { SuspendUserButton } from "@/components/admin/suspend-user-button";
 import { ImpersonateButton } from "@/components/admin/impersonate-button";
+import { CreateUserButton } from "@/components/admin/create-user-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,7 +23,7 @@ export default async function AdminPage() {
 
   return (
     <div>
-      <PageHeader title="Admin" description="Everyone with a GradPonto account." />
+      <PageHeader title="Admin" description="Everyone with a GradPonto account." actions={<CreateUserButton />} />
       <AdminTabs />
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
