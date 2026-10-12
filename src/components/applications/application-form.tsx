@@ -71,20 +71,30 @@ export function ApplicationForm({
   }, [company, existingApplications]);
 
   function handleAutofill() {
-    if (!jobUrl.trim()) {
-      toast.error("Paste the company's job listing URL first");
+    const input = jobUrl.trim();
+    const isUrl = /^https?:\/\//i.test(input);
+    // Job text pasted into the URL box (or already in the description) is analysed directly,
+    // for listings on sites that block the fetch.
+    const pastedText = isUrl ? "" : input || description.trim();
+    if (!isUrl && !pastedText) {
+      toast.error("Paste the job listing URL, or the job description text, first");
       return;
     }
     startAutofill(async () => {
-      const fetched = await fetchJobFromUrl(jobUrl.trim());
-      if (!fetched.ok) {
-        toast.error(fetched.error);
-        return;
+      let text = pastedText;
+      if (isUrl) {
+        const fetched = await fetchJobFromUrl(input);
+        if (!fetched.ok) {
+          toast.error(fetched.error);
+          return;
+        }
+        text = fetched.data.text;
       }
-      setDescription(fetched.data.text);
+      setDescription(text);
+      if (!isUrl && input) setJobUrl("");
 
       if (aiAvailable) {
-        const analysis = await analyzeJob(fetched.data.text);
+        const analysis = await analyzeJob(text);
         if (!analysis.ok) {
           toast.error(analysis.error);
           return;

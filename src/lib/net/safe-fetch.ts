@@ -60,7 +60,10 @@ async function assertPublicHost(url: URL) {
 const MAX_BYTES = 3 * 1024 * 1024;
 
 export async function fetchPublicPage(startUrl: string, init: { userAgent: string; timeoutMs?: number }): Promise<string> {
-  let url = new URL(startUrl); // throws on an invalid URL, caught by the caller
+  if (!URL.canParse(startUrl)) {
+    throw new Error("That isn't a link. Paste the job text into the job description box instead.");
+  }
+  let url = new URL(startUrl);
 
   for (let hop = 0; hop <= 3; hop++) {
     await assertPublicHost(url);
@@ -74,6 +77,9 @@ export async function fetchPublicPage(startUrl: string, init: { userAgent: strin
     if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
       url = new URL(res.headers.get("location")!, url);
       continue;
+    }
+    if (res.status === 403 || res.status === 429 || res.headers.has("cf-mitigated")) {
+      throw new Error("That site blocks automated requests. Open the listing in your browser and paste the job text in instead.");
     }
     if (!res.ok) throw new Error(`Could not fetch that URL (HTTP ${res.status})`);
 
