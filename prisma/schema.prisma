@@ -103,6 +103,10 @@ model User {
   skills       Skill[]
   projects     Project[]
 
+  gmailConnection GmailConnection?
+  gmailMessages   GmailMessage[]
+  gmailProposals  GmailProposal[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -215,8 +219,9 @@ model Application {
   // the scoped client fails the foreign-key check instead of creating misfiled data.
   userId String @default("")
 
-  documents  Document[]
-  activities Activity[]
+  documents      Document[]
+  activities     Activity[]
+  gmailProposals GmailProposal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -446,4 +451,100 @@ model UsageEvent {
   createdAt DateTime @default(now())
 
   @@index([kind, createdAt])
+}
+
+// --- Sync from Gmail (admin-only for now; see src/lib/gmail) ------------------------------------
+//
+// All three are per-user data registered in scoped-db.ts's OWNED_MODELS, so they're only ever
+// reached through scopedDb(). The Gmail feature always scopes to the REAL signed-in admin
+// (requireAdmin()), never to an impersonated user.
+
+// The one Gmail mailbox a user has connected, read-only (gmail.readonly scope). Only the refresh
+// token is kept, sealed with AES-256-GCM under a key derived from AUTH_SECRET (src/lib/auth/seal.ts),
+// so a copy of the database alone can't be used to read anyone's mail.
+model GmailConnection {
+  id                 String    @id @default(cuid())
+  // The mailbox's own address, as Gmail reports it. Mail not addressed to this (or the account's
+  // sign-in email) is ignored during a scan.
+  email              String
+  refreshTokenSealed String
+  // Where the next scan starts from. Null until the first scan finishes; that one looks back
+  // ~90 days instead.
+  lastSyncedAt       DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Every Gmail message a scan has looked at, whatever came of it, so the same email is never
+// fetched, classified or proposed twice. Kept after a disconnect on purpose: reconnecting the same
+// mailbox later shouldn't re-propose changes that were already approved or rejected.
+model GmailMessage {
+  id        String @id @default(cuid())
+  messageId String // Gmail's message id
+  // "skipped:<reason>" (pre-filter), "irrelevant" (the AI said it isn't about an application),
+  // "no-change", "duplicate", or "proposed".
+  outcome   String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @default("")
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, messageId])
+}
+
+enum GmailProposalKind {
+  NEW_APPLICATION
+  STATUS_CHANGE
+}
+
+enum GmailProposalState {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// One suggested change from a scanned email, waiting for the user to approve or reject it.
+// Nothing touches Application until it's approved.
+model GmailProposal {
+  id    String             @id @default(cuid())
+  kind  GmailProposalKind
+  state GmailProposalState @default(PENDING)
+
+  // The email it came from (the latest one, if a later email about the same application
+  // superseded an earlier proposal before it was reviewed).
+  messageId   String
+  threadId    String
+  subject     String
+  sender      String
+  snippet     String
+  receivedAt  DateTime
+
+  // What the AI read out of the email.
+  company    String
+  roleTitle  String
+  jobUrl     String?
+  reference  String?
+  event      String // applied | online_assessment | video_interview | interview | assessment_centre | offer | rejected | withdrawn
+  confidence Float
+
+  proposedStatus ApplicationStatus
+  // STATUS_CHANGE only: the application it would move, and its status when the proposal was made.
+  application    Application?       @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  applicationId  String?
+  fromStatus     ApplicationStatus?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @default("")
+
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([userId, state])
+  @@index([applicationId])
 }

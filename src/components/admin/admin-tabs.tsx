@@ -8,6 +8,7 @@ const tabs = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/usage", label: "Usage" },
   { href: "/admin/audit", label: "Audit log" },
+  { href: "/admin/gmail", label: "Gmail sync" },
 ];
 
 export function AdminTabs() {

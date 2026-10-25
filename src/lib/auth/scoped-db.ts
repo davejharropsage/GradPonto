@@ -12,6 +12,9 @@ const OWNED_MODELS = new Set([
   "Education",
   "Skill",
   "Project",
+  "GmailConnection",
+  "GmailMessage",
+  "GmailProposal",
 ]);
 
 // Operations that take a `where` and must only ever match the user's own rows.
