@@ -1,26 +1,14 @@
 "use server";
 
+import { tryAction, type ActionResult } from "@/lib/action-result";
+import { logError } from "@/lib/monitoring";
 import { revalidatePath } from "next/cache";
-import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { requireRegisteredUser, userDb } from "@/lib/auth/user";
 import { applicationStatuses } from "@/lib/labels";
 import { canonicalAddress, newInboxToken } from "@/lib/inbound/core";
 import { applyProposal, rejectProposal, type ProposalEdits } from "@/lib/inbound/apply";
 import { processInboundQueue, type ProcessResult } from "@/lib/inbound/process";
-
-// Same reasoning as lib/actions/analyze.ts: return expected errors instead of throwing, so the
-// message survives Next's production error redaction.
-type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
-
-async function tryAction<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
-  try {
-    return { ok: true, data: await fn() };
-  } catch (error) {
-    unstable_rethrow(error);
-    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
-  }
-}
 
 function revalidateAfterApply() {
   revalidatePath("/email-import");
@@ -41,7 +29,7 @@ const editsSchema = z
 
 /** Classifies anything still waiting (e.g. the AI was busy when it arrived). */
 export async function processEmailsNow(): Promise<ActionResult<ProcessResult>> {
-  return tryAction(async () => {
+  return tryAction("processEmailsNow", async () => {
     const user = await requireRegisteredUser();
     const result = await processInboundQueue(user.id);
     revalidatePath("/email-import");
@@ -50,7 +38,7 @@ export async function processEmailsNow(): Promise<ActionResult<ProcessResult>> {
 }
 
 export async function approveEmailSuggestion(id: string, edits?: ProposalEdits): Promise<ActionResult<string>> {
-  return tryAction(async () => {
+  return tryAction("approveEmailSuggestion", async () => {
     const user = await requireRegisteredUser();
     const parsed = editsSchema.safeParse(edits);
     if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the details and try again.");
@@ -64,7 +52,7 @@ export async function approveEmailSuggestion(id: string, edits?: ProposalEdits):
 export async function approveAllEmailSuggestions(
   edits: Record<string, ProposalEdits> = {}
 ): Promise<ActionResult<{ approved: number; failed: { id: string; error: string }[] }>> {
-  return tryAction(async () => {
+  return tryAction("approveAllEmailSuggestions", async () => {
     const user = await requireRegisteredUser();
     const db = await userDb();
     const pending = await db.emailSuggestion.findMany({ where: { state: "PENDING" }, orderBy: { receivedAt: "asc" }, select: { id: true } });
@@ -77,6 +65,7 @@ export async function approveAllEmailSuggestions(
         await applyProposal(user.id, id, parsed.data);
         approved++;
       } catch (error) {
+        logError("action approveAllEmailSuggestions", error, { suggestionId: id });
         failed.push({ id, error: error instanceof Error ? error.message : "Something went wrong" });
       }
     }
@@ -86,7 +75,7 @@ export async function approveAllEmailSuggestions(
 }
 
 export async function rejectEmailSuggestion(id: string): Promise<ActionResult<null>> {
-  return tryAction(async () => {
+  return tryAction("rejectEmailSuggestion", async () => {
     const user = await requireRegisteredUser();
     await rejectProposal(user.id, id);
     revalidatePath("/email-import");
@@ -96,7 +85,7 @@ export async function rejectEmailSuggestion(id: string): Promise<ActionResult<nu
 
 /** A new forwarding address; the old one stops working at once. For a leaked address. */
 export async function resetInboxAddress(): Promise<ActionResult<null>> {
-  return tryAction(async () => {
+  return tryAction("resetInboxAddress", async () => {
     const user = await requireRegisteredUser();
     const db = await userDb();
     await db.emailInbox.update({
@@ -111,7 +100,7 @@ export async function resetInboxAddress(): Promise<ActionResult<null>> {
 const addressSchema = z.string().trim().toLowerCase().pipe(z.email().max(254));
 
 export async function addKnownAddress(address: string): Promise<ActionResult<null>> {
-  return tryAction(async () => {
+  return tryAction("addKnownAddress", async () => {
     const user = await requireRegisteredUser();
     const parsed = addressSchema.safeParse(address);
     if (!parsed.success) throw new Error("Enter a valid email address.");
@@ -127,7 +116,7 @@ export async function addKnownAddress(address: string): Promise<ActionResult<nul
 }
 
 export async function removeKnownAddress(address: string): Promise<ActionResult<null>> {
-  return tryAction(async () => {
+  return tryAction("removeKnownAddress", async () => {
     const user = await requireRegisteredUser();
     const db = await userDb();
     const inbox = await db.emailInbox.findUniqueOrThrow({ where: { userId: user.id } });

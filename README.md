@@ -1,5 +1,7 @@
 # GradPonto
 
+> **Running GradPonto rather than developing it?** Start with [OWNERS_GUIDE.md](OWNERS_GUIDE.md): what it does, what it runs on, spending limits, and what to do when something breaks.
+
 A web app for UK graduates to track placement / graduate job applications: log opportunities, tailor a CV and cover letter per job (optionally with AI help), export a finished PDF, and track each application's status from first interest through to an offer, on a dashboard, a card grid, or a drag-and-drop kanban pipeline.
 
 People sign in with their email (a one-time code, no password), register with their name and university, and only ever see their own data. See [Accounts & sign-in](#accounts--sign-in).

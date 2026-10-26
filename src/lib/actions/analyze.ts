@@ -1,6 +1,6 @@
 "use server";
 
-import { unstable_rethrow } from "next/navigation";
+import { tryAction, type ActionResult } from "@/lib/action-result";
 import { analyzeJobDescription, type JobAnalysis } from "@/lib/ai/analyze-job";
 import { matchCvToJob, type CvMatch } from "@/lib/ai/match-cv";
 import { reviewCvGenerally, extractAtsKeywords, type CvHealthCheck } from "@/lib/ai/review-cv";
@@ -8,25 +8,8 @@ import { requireAiAllowance } from "@/lib/ai/limit";
 import { requireRegisteredUser, userDb } from "@/lib/auth/user";
 import { fetchPublicPage } from "@/lib/net/safe-fetch";
 
-/**
- * Next.js redacts a thrown Error's message in production before it reaches the client — great for
- * accidental leaks, but it also silently ate every deliberate "here's what you did wrong" message
- * below (e.g. "Paste a job description first"), replacing them with an opaque digest the browser
- * can't show. Every export in this file returns one of these instead of throwing for an expected,
- * user-facing case, so the real message survives the trip. unstable_rethrow lets Next's own
- * control-flow throws (redirect(), notFound()) pass through untouched — those must never be caught
- * here, only genuine errors.
- */
-type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
-
-async function tryAction<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
-  try {
-    return { ok: true, data: await fn() };
-  } catch (error) {
-    unstable_rethrow(error);
-    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong" };
-  }
-}
+// Every export returns an ActionResult rather than throwing, so user-facing messages survive
+// production error redaction; see lib/action-result.ts.
 
 // Keyword extraction only depends on the job description, so it's cached per application the same
 // way Adzuna search results are cached (lib/jobs/search.ts) — re-checking a different CV against
@@ -50,7 +33,7 @@ function stripHtml(html: string) {
 }
 
 export async function fetchJobFromUrl(url: string): Promise<ActionResult<{ text: string }>> {
-  return tryAction(async () => {
+  return tryAction("fetchJobFromUrl", async () => {
     await requireRegisteredUser();
     const html = await fetchPublicPage(url, { userAgent: "Mozilla/5.0 (compatible; GradPonto/1.0)" });
     const text = stripHtml(html);
@@ -60,7 +43,7 @@ export async function fetchJobFromUrl(url: string): Promise<ActionResult<{ text:
 }
 
 export async function analyzeJob(jobText: string): Promise<ActionResult<JobAnalysis>> {
-  return tryAction(async () => {
+  return tryAction("analyzeJob", async () => {
     await requireAiAllowance();
     if (!jobText.trim()) throw new Error("Paste a job description first");
     return analyzeJobDescription(jobText);
@@ -68,7 +51,7 @@ export async function analyzeJob(jobText: string): Promise<ActionResult<JobAnaly
 }
 
 export async function matchCv(params: { cvContent: string; applicationId: string }): Promise<ActionResult<CvMatch>> {
-  return tryAction(async () => {
+  return tryAction("matchCv", async () => {
     await requireAiAllowance();
     const db = await userDb();
     const application = await db.application.findUniqueOrThrow({ where: { id: params.applicationId } });
@@ -80,7 +63,7 @@ export async function matchCv(params: { cvContent: string; applicationId: string
 }
 
 export async function reviewCvHealth(cvContent: string): Promise<ActionResult<CvHealthCheck>> {
-  return tryAction(async () => {
+  return tryAction("reviewCvHealth", async () => {
     await requireAiAllowance();
     if (!cvContent.trim()) throw new Error("Add a CV first");
     return reviewCvGenerally(cvContent);
@@ -88,7 +71,7 @@ export async function reviewCvHealth(cvContent: string): Promise<ActionResult<Cv
 }
 
 export async function getAtsKeywords(applicationId: string): Promise<ActionResult<string[]>> {
-  return tryAction(async () => {
+  return tryAction("getAtsKeywords", async () => {
     // Ownership is checked first, every time — even a cache hit only ever returns keywords for an
     // application this user's own scoped query can see.
     const db = await userDb();

@@ -66,13 +66,20 @@ export async function fetchPublicPage(startUrl: string, init: { userAgent: strin
   let url = new URL(startUrl);
 
   for (let hop = 0; hop <= 3; hop++) {
-    await assertPublicHost(url);
-
-    const res = await fetch(url, {
-      headers: { "User-Agent": init.userAgent },
-      redirect: "manual",
-      signal: AbortSignal.timeout(init.timeoutMs ?? 15000),
-    });
+    let res: Response;
+    try {
+      await assertPublicHost(url);
+      res = await fetch(url, {
+        headers: { "User-Agent": init.userAgent },
+        redirect: "manual",
+        signal: AbortSignal.timeout(init.timeoutMs ?? 15000),
+      });
+    } catch (error) {
+      // Our own refusals pass through. A DNS failure, refused connection or timeout is about the
+      // link the user gave (a typo, a dead site), not a fault in the app: say so plainly.
+      if (error instanceof Error && error.constructor === Error && !("code" in error)) throw error;
+      throw new Error("We couldn't reach that site. Check the link, or paste the job text in instead.");
+    }
 
     if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
       url = new URL(res.headers.get("location")!, url);

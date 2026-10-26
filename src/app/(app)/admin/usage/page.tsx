@@ -5,9 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { getUsageToday } from "@/lib/data/admin";
 
+const meterLabels: Record<string, { title: string; unit: string }> = {
+  AI: { title: "AI (Gemini / Claude)", unit: "Requests" },
+  ADZUNA: { title: "Job search (Adzuna)", unit: "Real searches (cached repeats don't count)" },
+  MAIL: { title: "Emails sent (SMTP)", unit: "Sign-up, reset and welcome emails" },
+  INBOUND: { title: "Emails received (Email import)", unit: "Forwarded emails" },
+};
+
 export default async function AdminUsagePage() {
   const usage = await getUsageToday();
-  const hasAnyData = usage.ai.today > 0 || usage.adzuna.today > 0;
+  const hasAnyData = usage.some((meter) => meter.today > 0);
 
   return (
     <div>
@@ -23,36 +30,34 @@ export default async function AdminUsagePage() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">AI (Gemini)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-2xl font-semibold">{usage.ai.today}</p>
-              <p className="text-xs text-muted-foreground">Requests today</p>
-            </div>
-            <div>
-              <p className="text-lg font-medium">{usage.ai.lastHour}</p>
-              <p className="text-xs text-muted-foreground">In the last hour, across all users (each person is capped at 30/hour)</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Job search (Adzuna)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-2xl font-semibold">{usage.adzuna.today}</p>
-              <p className="text-xs text-muted-foreground">Real searches today (cached repeats don&apos;t count)</p>
-            </div>
-            <div>
-              <p className="text-lg font-medium">{usage.adzuna.lastHour}</p>
-              <p className="text-xs text-muted-foreground">In the last hour, against Adzuna&apos;s shared daily/minute budget.</p>
-            </div>
-          </CardContent>
-        </Card>
+        {usage.map((meter) => {
+          const label = meterLabels[meter.kind];
+          const nearLimit = meter.today >= meter.limit * 0.8;
+          return (
+            <Card key={meter.kind}>
+              <CardHeader>
+                <CardTitle className="text-base">{label.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-2xl font-semibold">
+                    {meter.today}
+                    <span className={nearLimit ? "text-base text-destructive" : "text-base text-muted-foreground"}> / {meter.limit}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {label.unit} today (UTC), against the daily cap <code>{meter.limitEnv}</code>
+                    {meter.perUserLimit ? `; ${meter.perUserLimit} per person` : ""}. At the cap, requests are refused until midnight UTC and
+                    you get an alert email.
+                  </p>
+                </div>
+                <div>
+                  <p className="text-lg font-medium">{meter.lastHour}</p>
+                  <p className="text-xs text-muted-foreground">In the last hour</p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

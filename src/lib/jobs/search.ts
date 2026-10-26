@@ -1,6 +1,7 @@
 import "server-only";
 import { isRateLimitedKey } from "@/lib/auth/rate-limit";
-import { prisma } from "@/lib/db";
+import { takeDailyAllowance } from "@/lib/limits";
+import { logError } from "@/lib/monitoring";
 import { AdzunaError, adzunaConfigured, fetchAdzuna } from "./adzuna";
 import { rankListings, type JobListing } from "./listing";
 
@@ -9,18 +10,16 @@ import { rankListings, type JobListing } from "./listing";
 //   1. results are cached for 15 minutes (same words + place = no new request)
 //   2. each person gets a limited number of fresh searches per hour
 //   3. a global budget stays safely under Adzuna's minute and day limits
-// These counters live in this server process; if you run several instances, move them to a
-// shared store (for example Redis), like the sign-in rate limiter.
+// The per-hour and per-minute counters live in this server process (a cheap first check); the
+// daily budget is counted in the database (lib/limits.ts), so it holds across every instance.
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 200;
 const USER_SEARCHES_PER_HOUR = 12;
-const MINUTE_BUDGET = 20; // Adzuna: 25
-const DAY_BUDGET = 200; // Adzuna: 250
+const MINUTE_BUDGET = 20; // Adzuna: 25 (the daily budget is ADZUNA_DAILY_LIMIT, see lib/limits.ts)
 
 const cache = new Map<string, { at: number; listings: JobListing[] }>();
 let minuteHits: number[] = [];
-let day = { key: "", count: 0 };
 
 export type SearchOutcome =
   | { ok: true; listings: JobListing[]; fromCache: boolean }
@@ -30,15 +29,12 @@ function cacheKey(keywords: string[], location: string) {
   return `${keywords.map((k) => k.toLowerCase()).sort().join("|")}::${location.trim().toLowerCase()}`;
 }
 
-/** True (and counts the request) if there is room in Adzuna's shared allowance. */
-function takeBudget(): boolean {
+/** True (and counts the request) if there is room in Adzuna's per-minute allowance. */
+function takeMinuteBudget(): boolean {
   const now = Date.now();
-  const today = new Date().toISOString().slice(0, 10);
-  if (day.key !== today) day = { key: today, count: 0 };
   minuteHits = minuteHits.filter((t) => now - t < 60_000);
-  if (minuteHits.length >= MINUTE_BUDGET || day.count >= DAY_BUDGET) return false;
+  if (minuteHits.length >= MINUTE_BUDGET) return false;
   minuteHits.push(now);
-  day.count++;
   return true;
 }
 
@@ -54,20 +50,24 @@ export async function searchPlacements(userId: string, keywords: string[], locat
   if (isRateLimitedKey(`find:${userId}`, USER_SEARCHES_PER_HOUR, 60 * 60 * 1000)) {
     return { ok: false, reason: "too-many", message: "You've run a lot of searches this hour. Please try again a little later." };
   }
-  if (!takeBudget()) {
+  if (!takeMinuteBudget()) {
     return { ok: false, reason: "busy", message: "Search is very busy right now. Please try again in a few minutes." };
+  }
+  // Durable, and also what the admin usage dashboard counts. Taken before the call: an attempt
+  // that fails still counts towards Adzuna's allowance.
+  if (!(await takeDailyAllowance("ADZUNA", { total: "ADZUNA" }, userId)).ok) {
+    return { ok: false, reason: "busy", message: "Job search has reached its limit for today. Please try again tomorrow." };
   }
 
   try {
     const listings = rankListings(await fetchAdzuna(keywords, location), keywords);
     cache.set(key, { at: Date.now(), listings });
     if (cache.size > CACHE_MAX_ENTRIES) cache.delete(cache.keys().next().value as string);
-    // Durable, for the admin usage dashboard — only for a real (non-cached) call, since that's
-    // the shared allowance actually being spent.
-    await prisma.usageEvent.create({ data: { kind: "ADZUNA", userId } });
     return { ok: true, listings, fromCache: false };
   } catch (error) {
-    console.error("Job search failed:", error instanceof AdzunaError ? error.message : "unexpected error");
+    // An AdzunaError's message is ours; anything else is logged by name only, since some runtimes
+    // echo the request URL (with the API key in it) into network error messages.
+    logError("Job search", error instanceof AdzunaError ? error : new Error(error instanceof Error ? error.name : "unexpected error"));
     return { ok: false, reason: "unavailable", message: "We couldn't reach the job search service. Please try again shortly." };
   }
 }

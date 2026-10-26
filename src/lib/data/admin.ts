@@ -1,4 +1,5 @@
 import { requireAdmin, adminDb } from "@/lib/auth/admin";
+import { DAILY_LIMITS, dailyLimit, startOfUtcDay } from "@/lib/limits";
 
 /** The most recent admin actions, newest first. */
 export async function getAuditLog(limit = 200) {
@@ -52,18 +53,30 @@ export async function getAdminUserList() {
   });
 }
 
-/** How much of the shared AI/Adzuna allowance has been used today and in the last hour. */
+/** Today's use of everything with a daily cap (lib/limits.ts), against that cap, plus the last hour. */
 export async function getUsageToday() {
   await requireAdmin();
   const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const [aiToday, aiLastHour, adzunaToday, adzunaLastHour] = await Promise.all([
-    adminDb.usageEvent.count({ where: { kind: "AI", createdAt: { gte: startOfToday() } } }),
-    adminDb.usageEvent.count({ where: { kind: "AI", createdAt: { gte: hourAgo } } }),
-    adminDb.usageEvent.count({ where: { kind: "ADZUNA", createdAt: { gte: startOfToday() } } }),
-    adminDb.usageEvent.count({ where: { kind: "ADZUNA", createdAt: { gte: hourAgo } } }),
-  ]);
-  return {
-    ai: { today: aiToday, lastHour: aiLastHour },
-    adzuna: { today: adzunaToday, lastHour: adzunaLastHour },
-  };
+  const meters = [
+    { kind: "AI", limit: "AI", perUser: "AI_PER_USER" },
+    { kind: "ADZUNA", limit: "ADZUNA" },
+    { kind: "MAIL", limit: "MAIL" },
+    { kind: "INBOUND", limit: "INBOUND", perUser: "INBOUND_PER_USER" },
+  ] as const;
+  return Promise.all(
+    meters.map(async (meter) => {
+      const [today, lastHour] = await Promise.all([
+        adminDb.usageEvent.count({ where: { kind: meter.kind, createdAt: { gte: startOfUtcDay() } } }),
+        adminDb.usageEvent.count({ where: { kind: meter.kind, createdAt: { gte: hourAgo } } }),
+      ]);
+      return {
+        kind: meter.kind,
+        today,
+        lastHour,
+        limit: dailyLimit(meter.limit),
+        limitEnv: DAILY_LIMITS[meter.limit].env,
+        perUserLimit: "perUser" in meter ? dailyLimit(meter.perUser) : null,
+      };
+    })
+  );
 }

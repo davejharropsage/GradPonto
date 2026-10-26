@@ -7,6 +7,8 @@ import { inboundDomain, inboundWebhookSecret } from "@/lib/inbound/config";
 import { ingestInboundEmail } from "@/lib/inbound/ingest";
 import { fromPostmark, parsePostmarkPayload, postmarkRecipients } from "@/lib/inbound/parse";
 import { processInboundQueue } from "@/lib/inbound/process";
+import { takeDailyAllowance } from "@/lib/limits";
+import { logError, reportError } from "@/lib/monitoring";
 
 // Filing the email is quick; classifying it runs in after() once Postmark has its 200.
 export const maxDuration = 60;
@@ -50,20 +52,35 @@ export async function POST(request: Request) {
     // Postmark backs off and retries later.
     return Response.json({ error: "Too many emails for this inbox; try later" }, { status: 429 });
   }
+  // Daily caps (lib/limits.ts). Postmark has already billed for the email by now; this stops a
+  // flood running up the AI bill as well. Dropped with a 200: retrying tomorrow wouldn't help.
+  const allowance = await takeDailyAllowance("INBOUND", { total: "INBOUND", perUser: "INBOUND_PER_USER" }, owner.user.id);
+  if (!allowance.ok) {
+    logError("Inbound email dropped", new Error(`daily ${allowance.scope} limit reached`), { userId: owner.user.id });
+    return Response.json({ ignored: "daily limit reached" });
+  }
 
-  const result = await ingestInboundEmail(
-    { userId: owner.user.id, userEmail: owner.user.email, knownAddresses: owner.inbox.knownAddresses },
-    fromPostmark(payload)
-  );
+  let result;
+  try {
+    result = await ingestInboundEmail(
+      { userId: owner.user.id, userEmail: owner.user.email, knownAddresses: owner.inbox.knownAddresses },
+      fromPostmark(payload)
+    );
+  } catch (error) {
+    await reportError("Inbound email webhook", error, { userId: owner.user.id });
+    // 500: Postmark retries later, so nothing is lost while it's fixed.
+    return Response.json({ error: "Couldn't file this email" }, { status: 500 });
+  }
 
   if (result.kind === "emails" && result.queued > 0) {
     after(async () => {
       try {
         const processed = await processInboundQueue(owner.user.id);
-        if (processed.error) console.warn(`Inbound emails left queued for ${owner.user.id}: ${processed.error}`);
+        // Usually the AI being busy or the user's AI allowance — left queued, and the AI client
+        // itself alerts on real outages. The Email import page has a "Process" button.
+        if (processed.error) logError("Inbound emails left queued", new Error(processed.error), { userId: owner.user.id });
       } catch (error) {
-        // Left queued; the Email import page has a "Process now" button.
-        console.error("Processing inbound emails failed:", error);
+        await reportError("Inbound email processing", error, { userId: owner.user.id });
       }
     });
   }
