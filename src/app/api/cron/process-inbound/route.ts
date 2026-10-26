@@ -5,14 +5,16 @@ import { logError } from "@/lib/monitoring";
 
 export const maxDuration = 60;
 // One user's processInboundQueue() can take up to ~40s of AI calls, so another user is only
-// started early in the run; anyone left over is picked up 15 minutes later.
+// started early in the run; anyone left over is picked up on the next run, or sooner when they
+// open the Email import page (which retries their own queue).
 const START_NEXT_USER_BEFORE_MS = 10_000;
 const USERS_PER_RUN = 20;
 
 /**
  * Scheduled retry for Email import (vercel.json → crons): classifies forwarded emails that are
  * still waiting because the AI was busy or out of allowance when they arrived, so nobody has to
- * press "Process" on the Email import page. Vercel calls it with `Authorization: Bearer
+ * press "Process" on the Email import page. Daily (05:17 UTC): Vercel's Hobby plan allows no more
+ * often; on Pro it can run every 15 minutes. Opening the Email import page also retries. Vercel calls it with `Authorization: Bearer
  * <CRON_SECRET>`; anything else gets a 401.
  */
 export async function GET(request: Request) {
