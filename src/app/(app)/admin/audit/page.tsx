@@ -18,8 +18,6 @@ const actionLabels: Record<string, string> = {
   "user.reinstate": "Reinstated user",
   "user.impersonate_start": "Started impersonating",
   "user.impersonate_stop": "Stopped impersonating",
-  "gmail.connect": "Connected Gmail",
-  "gmail.disconnect": "Disconnected Gmail",
 };
 
 export default async function AdminAuditPage() {

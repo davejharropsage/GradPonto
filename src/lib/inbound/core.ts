@@ -1,22 +1,14 @@
+import { createHash, randomBytes } from "node:crypto";
 import { looksLikeDuplicate, normalizeCompanyName, similarity } from "../fuzzy.ts";
 import { applicationStatuses } from "../labels.ts";
 
-// The pure half of "Sync from Gmail": no network, no database, no env, so tests/gmail-sync.test.ts
-// can import it through the plain node:test runner. The Gmail API calls live in ./google.ts, the
-// orchestration (and every database write) in ./sync.ts.
+// The pure half of email import: no network, no database, no env, so tests/email-import.test.ts
+// can import it through the plain node:test runner. Parsing what the inbound provider sends lives
+// in ./parse.ts, storing and processing it (every database write) in ./ingest.ts and ./process.ts.
 
 export type ApplicationStatus = (typeof applicationStatuses)[number];
 
-// --- Gmail search query --------------------------------------------------------------------------
-
-/** How far back the very first scan looks. */
-export const FIRST_SYNC_LOOKBACK_DAYS = 90;
-/**
- * Later scans start this long before the previous one finished: Gmail's `after:` is coarse and
- * mail can arrive late, and re-listing a message we've already seen costs nothing because the
- * processed-message ledger filters it out before anything is fetched.
- */
-export const SYNC_OVERLAP_HOURS = 24;
+// --- Senders and the Gmail filter ---------------------------------------------------------------
 
 // Applicant-tracking systems and assessment platforms that send application updates. Matched as
 // the sender's domain or any parent of it (so "fa.em2.oraclecloud.com" matches "oraclecloud.com").
@@ -63,7 +55,7 @@ export const NEWSLETTER_SENDER_DOMAINS = [
   "joinhandshake.com",
 ] as const;
 
-const QUERY_PHRASES = [
+const FILTER_PHRASES = [
   '"application received"',
   '"thank you for applying"',
   '"thanks for applying"',
@@ -79,16 +71,14 @@ const QUERY_PHRASES = [
 ];
 
 /**
- * The Gmail search for one scan. `{a b}` is Gmail's OR. Wide on purpose — anything that might be
- * an application email — because the pre-filter and the AI do the narrowing; a missed rejection
- * is worse than a wasted classification.
+ * What users paste into a Gmail filter's "Has the words" box to forward likely application emails
+ * (and nothing else) to their GradPonto address. `{a b}` is Gmail's OR. Wide on purpose — the
+ * pre-filter and the AI do the narrowing; a missed rejection is worse than a wasted classification.
+ * The same text works as a Gmail search, for picking old emails to forward as attachments.
  */
-export function buildGmailQuery(lastSyncedAt: Date | null, now: Date = new Date()): string {
-  const since = lastSyncedAt
-    ? new Date(lastSyncedAt.getTime() - SYNC_OVERLAP_HOURS * 60 * 60 * 1000)
-    : new Date(now.getTime() - FIRST_SYNC_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
-  const terms = [...QUERY_PHRASES, ...ATS_SENDER_DOMAINS.map((domain) => `from:${domain}`)];
-  return [`after:${Math.floor(since.getTime() / 1000)}`, "-from:me", "-category:social", `{${terms.join(" ")}}`].join(" ");
+export function gmailFilterQuery(): string {
+  const terms = [...FILTER_PHRASES, ...ATS_SENDER_DOMAINS.map((domain) => `from:${domain}`)];
+  return `{${terms.join(" ")}}`;
 }
 
 // --- Addresses -----------------------------------------------------------------------------------
@@ -549,12 +539,6 @@ export function unprocessedIds(ids: string[], processed: Iterable<string>): stri
 
 // --- Message bodies ------------------------------------------------------------------------------
 
-interface GmailPart {
-  mimeType?: string;
-  body?: { data?: string };
-  parts?: GmailPart[];
-}
-
 export function htmlToText(html: string): string {
   return html
     .replace(/<(script|style|head)[\s\S]*?<\/\1>/gi, " ")
@@ -571,18 +555,105 @@ export function htmlToText(html: string): string {
     .trim();
 }
 
-/** The readable text of a Gmail API message payload: text/plain if there is one, else text/html stripped. */
-export function extractBodyText(payload: GmailPart | undefined): string {
-  if (!payload) return "";
-  const plain: string[] = [];
-  const html: string[] = [];
-  const walk = (part: GmailPart) => {
-    const data = part.body?.data;
-    if (data && part.mimeType === "text/plain") plain.push(Buffer.from(data, "base64url").toString("utf8"));
-    if (data && part.mimeType === "text/html") html.push(Buffer.from(data, "base64url").toString("utf8"));
-    part.parts?.forEach(walk);
+// --- Inbound addresses ---------------------------------------------------------------------------
+
+/** A new inbox token: 12 characters of [a-z0-9] (~62 bits), safe as an email local part. */
+export function newInboxToken(): string {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  return [...randomBytes(12)].map((byte) => alphabet[byte % alphabet.length]).join("");
+}
+
+/** The inbox token an inbound message was sent to, or null if it wasn't addressed to `domain`. */
+export function inboxTokenFromRecipient(recipient: string, domain: string): string | null {
+  const [local, host] = recipient.trim().toLowerCase().split("@");
+  if (!local || host !== domain.trim().toLowerCase()) return null;
+  // Tolerate "token+anything", which some providers and people add.
+  const token = local.split("+")[0];
+  return /^[a-z0-9]{8,32}$/.test(token) ? token : null;
+}
+
+/**
+ * The dedupe key for one email: its Message-ID when it has one (the same email forwarded twice —
+ * by the filter and again as an attachment — keeps its Message-ID), else a hash of what's left.
+ */
+export function messageKeyFor(email: { messageId?: string | null; from?: string; subject?: string; date?: string | null }): string {
+  const id = email.messageId?.trim().replace(/^<|>$/g, "").toLowerCase();
+  if (id) return `mid:${id}`;
+  return `hash:${createHash("sha256").update(`${email.from ?? ""}\n${email.subject ?? ""}\n${email.date ?? ""}`).digest("hex").slice(0, 40)}`;
+}
+
+/** Link to find an email in Gmail by its Message-ID (works whichever mailbox it's in). */
+export function gmailSearchUrl(messageId: string): string {
+  return `https://mail.google.com/mail/u/0/#search/${encodeURIComponent(`rfc822msgid:${messageId.replace(/^<|>$/g, "")}`)}`;
+}
+
+// --- Gmail forwarding confirmation ---------------------------------------------------------------
+
+export interface ForwardingConfirmation {
+  code: string | null;
+  url: string | null;
+  /** The Gmail address asking to forward here. */
+  from: string | null;
+}
+
+/**
+ * Gmail sends a confirmation to a new forwarding address before it will forward anything:
+ * From forwarding-noreply@google.com, subject "(#123456789) Gmail Forwarding Confirmation -
+ * Receive Mail from someone@gmail.com", with a confirmation link and code in the body. Returns
+ * what the user needs to finish setup, or null if `email` isn't one.
+ */
+export function parseForwardingConfirmation(email: { from?: string; subject?: string; text?: string }): ForwardingConfirmation | null {
+  const fromAddress = parseAddresses(email.from)[0] ?? "";
+  const subject = email.subject ?? "";
+  if (fromAddress !== "forwarding-noreply@google.com" || !/forwarding confirmation/i.test(subject)) return null;
+  const text = email.text ?? "";
+  const code = subject.match(/\(#(\d{5,})\)/)?.[1] ?? text.match(/confirmation code:\s*(\d{5,})/i)?.[1] ?? null;
+  const url = text.match(/https:\/\/(?:mail-settings\.google\.com|mail\.google\.com|isolated\.mail\.google\.com)\/\S+/)?.[0] ?? null;
+  const requester = subject.match(/receive mail from\s+(\S+@\S+)/i)?.[1] ?? text.match(/(\S+@\S+) has requested/i)?.[1] ?? null;
+  return { code, url, from: requester ? parseAddresses(requester)[0] ?? null : null };
+}
+
+// --- Inline forwards ----------------------------------------------------------------------------
+
+export interface InlineForward {
+  from: string;
+  to: string;
+  cc: string;
+  subject: string;
+  date: string;
+  text: string;
+}
+
+const FORWARD_MARKER = /^-{2,}\s*(forwarded message|original message)\s*-{2,}\s*$/im;
+
+/**
+ * The email inside a manual "Forward" (Gmail's "---------- Forwarded message ---------" block, or
+ * Outlook's "-----Original Message-----"), or null if `text` doesn't contain one.
+ */
+export function parseInlineForward(text: string): InlineForward | null {
+  const marker = FORWARD_MARKER.exec(text);
+  if (!marker) return null;
+  const rest = text.slice(marker.index + marker[0].length).replace(/^\s*\n/, "");
+  const lines = rest.split(/\r?\n/);
+  const headers: Record<string, string> = {};
+  let i = 0;
+  for (; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) {
+      if (Object.keys(headers).length > 0) break;
+      continue;
+    }
+    const match = line.match(/^(from|to|cc|subject|date|sent):\s*(.*)$/i);
+    if (!match) break;
+    headers[match[1].toLowerCase() === "sent" ? "date" : match[1].toLowerCase()] = match[2];
+  }
+  if (!headers.from) return null;
+  return {
+    from: headers.from,
+    to: headers.to ?? "",
+    cc: headers.cc ?? "",
+    subject: headers.subject ?? "",
+    date: headers.date ?? "",
+    text: lines.slice(i).join("\n").trim(),
   };
-  walk(payload);
-  if (plain.join("").trim()) return plain.join("\n").replace(/\r/g, "").trim();
-  return htmlToText(html.join("\n"));
 }

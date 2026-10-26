@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { generateText, extractJson } from "./client";
-import { EMAIL_EVENTS, type EmailEvent } from "@/lib/gmail/sync-core";
+import { EMAIL_EVENTS, type EmailEvent } from "@/lib/inbound/core";
 
 export interface EmailForClassification {
   /** Echoed back so answers can be paired with emails whatever order the model returns them in. */

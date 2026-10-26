@@ -195,22 +195,23 @@ Vercel preview deployments use the live `APP_URL`, so provider sign-in on a prev
 
 For the live site, add the same four variables in Vercel (**Settings → Environment Variables**) and redeploy.
 
-### Sync from Gmail (admin-only)
+### Email import
 
-**Admin → Gmail sync** connects the owner's Gmail read-only, scans it for job-application emails, and lists suggested changes (new applications and forward stage moves) to approve or reject. Nothing is written to applications until a suggestion is approved. Code: `src/lib/gmail/` (`sync-core.ts` is the pure filtering/matching logic, tested in `tests/gmail-sync.test.ts`), `src/lib/ai/classify-email.ts`, `src/lib/actions/gmail.ts`, `src/app/api/gmail/`.
+**Email import** (in the sidebar) gives each user a private forwarding address, `<token>@in.gradponto.com`. They point a Gmail filter at it (the page shows the exact filter text and walks them through Gmail's forwarding confirmation, whose code/link it displays), and can bring in older mail with Gmail's *Forward as attachment*. Each email is pre-filtered (must be addressed to one of the user's own addresses, which drops spam to strangers; job-board newsletters and alerts are skipped), classified by the AI, matched to their applications and shown as a suggestion. Nothing is written to applications until a suggestion is approved.
 
-It uses its **own** Google OAuth client (`GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET`), not the sign-in one: `gmail.readonly` is a restricted scope, so that app stays in *Testing* mode with only the owner as a test user, and the live "Continue with Google" app is unaffected.
+Code: `src/lib/inbound/` (`core.ts` is the pure filtering/matching/parsing logic, tested in `tests/email-import.test.ts`; `ingest.ts` files incoming mail; `process.ts` classifies the queue), `src/app/api/inbound/postmark/route.ts` (the webhook), `src/lib/ai/classify-email.ts`, `src/app/(app)/email-import/`. Email bodies are deleted once classified; only the subject, sender and a short snippet are kept.
 
-1. [Google Cloud Console](https://console.cloud.google.com/) → create a new project (e.g. *GradPonto Gmail*).
-2. **APIs & Services → Library** → *Gmail API* → **Enable**.
-3. **APIs & Services → OAuth consent screen** (Google Auth Platform): user type *External*, app name, support email. **Data access → Add scopes**: `https://www.googleapis.com/auth/gmail.readonly` only. **Audience**: leave it in *Testing* and add your Gmail address under **Test users**. Don't publish it.
-4. **Clients → Create client** → *Web application*. Authorised redirect URIs:
-   - `https://gradponto.com/api/gmail/callback` (production)
-   - `https://grad-ponto-git-lucas-dev-grad-ponto.vercel.app/api/gmail/callback` (the `lucas/dev` preview; previews use their branch URL, `VERCEL_BRANCH_URL`, for this callback)
-   - `http://localhost:3000/api/gmail/callback` (local)
-5. Copy the client ID and secret into `GMAIL_CLIENT_ID` and `GMAIL_CLIENT_SECRET` (Vercel: **Settings → Environment Variables**, Production and Preview), and redeploy.
+Setup (DNS for gradponto.com is at Wix):
 
-Notes: Google expires refresh tokens for Testing-mode apps after 7 days, so expect to press **Reconnect** about weekly. The refresh token is sealed with AES-256-GCM under a key derived from `AUTH_SECRET`; rotating `AUTH_SECRET` just means reconnecting.
+1. **Postmark** ([postmarkapp.com](https://postmarkapp.com)): create a server, open its **Default Inbound Stream → Settings**.
+   - **Inbound domain:** `in.gradponto.com`.
+   - **Webhook URL:** `https://postmark:<INBOUND_WEBHOOK_SECRET>@gradponto.com/api/inbound/postmark` (the secret is the password; the user name is ignored).
+   - Leave "Include raw email content" **off** (it doubles the payload, and Vercel caps a request at 4.5 MB).
+2. **DNS (Wix → Domains → gradponto.com → Manage DNS records → MX):** add an MX record with host `in`, value `inbound.postmarkapp.com`, priority `10`. Only the `in.` subdomain changes; mail to `@gradponto.com` itself is unaffected.
+3. **Vercel env vars** (Production, and Preview if you want it there): `INBOUND_EMAIL_DOMAIN=in.gradponto.com` and `INBOUND_WEBHOOK_SECRET=<the same random secret>`. Redeploy.
+4. Check it: open **Email import**, copy your address, and send it any email from the address you signed up with containing the word "application". It shows up under "Recently ignored" or as a suggestion within a minute. Postmark's **Activity** tab shows every delivery and its webhook response.
+
+Limits: a webhook body over 4.5 MB is refused by Vercel, so "Forward as attachment" batches should be ~25 emails. Each inbox accepts up to 120 messages an hour, and AI classification uses the user's normal hourly AI allowance (anything over waits in the queue; the page has a "Process" button).
 
 ### Email
 

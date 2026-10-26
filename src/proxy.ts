@@ -21,6 +21,8 @@ const PUBLIC = [
   /^\/terms$/,
   /^\/dev\/outbox$/,
   /^\/api\/auth\/oauth\//,
+  // The inbound email provider's webhook; it authenticates itself (see the route).
+  /^\/api\/inbound\//,
 ];
 
 export function proxy(request: NextRequest) {

@@ -103,9 +103,9 @@ model User {
   skills       Skill[]
   projects     Project[]
 
-  gmailConnection GmailConnection?
-  gmailMessages   GmailMessage[]
-  gmailProposals  GmailProposal[]
+  emailInbox       EmailInbox?
+  inboundEmails    InboundEmail[]
+  emailSuggestions EmailSuggestion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -221,7 +221,7 @@ model Application {
 
   documents      Document[]
   activities     Activity[]
-  gmailProposals GmailProposal[]
+  emailSuggestions EmailSuggestion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -453,24 +453,30 @@ model UsageEvent {
   @@index([kind, createdAt])
 }
 
-// --- Sync from Gmail (admin-only for now; see src/lib/gmail) ------------------------------------
+// --- Email import (src/lib/inbound) -------------------------------------------------------------
 //
-// All three are per-user data registered in scoped-db.ts's OWNED_MODELS, so they're only ever
-// reached through scopedDb(). The Gmail feature always scopes to the REAL signed-in admin
-// (requireAdmin()), never to an impersonated user.
+// Users forward application emails (a Gmail filter, or "Forward as attachment" for older mail) to
+// a private address of their own on INBOUND_EMAIL_DOMAIN. An inbound email provider (Postmark)
+// posts each one to /api/inbound/postmark; it's filtered, classified by the AI and turned into
+// suggestions the user reviews. All three are per-user data in scoped-db.ts's OWNED_MODELS.
 
-// The one Gmail mailbox a user has connected, read-only (gmail.readonly scope). Only the refresh
-// token is kept, sealed with AES-256-GCM under a key derived from AUTH_SECRET (src/lib/auth/seal.ts),
-// so a copy of the database alone can't be used to read anyone's mail.
-model GmailConnection {
-  id                 String    @id @default(cuid())
-  // The mailbox's own address, as Gmail reports it. Mail not addressed to this (or the account's
-  // sign-in email) is ignored during a scan.
-  email              String
-  refreshTokenSealed String
-  // Where the next scan starts from. Null until the first scan finishes; that one looks back
-  // ~90 days instead.
-  lastSyncedAt       DateTime?
+// A user's private forwarding address, `<token>@<INBOUND_EMAIL_DOMAIN>`. The token is the only
+// thing that says whose mail it is, so it's long and random, and the user can reset it.
+model EmailInbox {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  // The user's own mailbox addresses besides their sign-in email. Mail that isn't addressed to one
+  // of these (or the sign-in email) is ignored, which is what drops spam sent to strangers.
+  // Learned from Gmail's forwarding confirmation and from forwards the user sends; editable.
+  knownAddresses String[]
+
+  // The latest "Gmail Forwarding Confirmation" email, shown so the user can finish setup.
+  forwardingCode        String?
+  forwardingUrl         String?
+  forwardingFrom        String?
+  forwardingRequestedAt DateTime?
+
+  lastReceivedAt DateTime?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @unique @default("")
@@ -479,50 +485,65 @@ model GmailConnection {
   updatedAt DateTime @updatedAt
 }
 
-// Every Gmail message a scan has looked at, whatever came of it, so the same email is never
-// fetched, classified or proposed twice. Kept after a disconnect on purpose: reconnecting the same
-// mailbox later shouldn't re-propose changes that were already approved or rejected.
-model GmailMessage {
-  id        String @id @default(cuid())
-  messageId String // Gmail's message id
-  // "skipped:<reason>" (pre-filter), "irrelevant" (the AI said it isn't about an application),
-  // "no-change", "duplicate", or "proposed".
-  outcome   String
+enum InboundEmailStatus {
+  QUEUED // waiting to be classified
+  PROCESSING // claimed by a worker (see lib/inbound/process.ts)
+  DONE
+}
+
+// Every email that has arrived, whatever came of it. `messageKey` (the original Message-ID, or a
+// hash when there isn't one) is what stops the same email being processed twice — e.g. forwarded
+// by the filter and later again as an attachment.
+model InboundEmail {
+  id                String             @id @default(cuid())
+  messageKey        String
+  originalMessageId String?
+  sender            String
+  subject           String
+  snippet           String
+  receivedAt        DateTime
+  // Only kept until it's been classified, then cleared: the rest of the email isn't needed.
+  bodyText          String?
+  status            InboundEmailStatus @default(QUEUED)
+  // Once DONE: "skipped:<reason>", "irrelevant", "no-change", "duplicate" or "proposed".
+  outcome           String?
+  claimId           String?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @default("")
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@unique([userId, messageId])
+  @@unique([userId, messageKey])
+  @@index([userId, status])
 }
 
-enum GmailProposalKind {
+enum EmailSuggestionKind {
   NEW_APPLICATION
   STATUS_CHANGE
 }
 
-enum GmailProposalState {
+enum EmailSuggestionState {
   PENDING
   APPROVED
   REJECTED
 }
 
-// One suggested change from a scanned email, waiting for the user to approve or reject it.
-// Nothing touches Application until it's approved.
-model GmailProposal {
-  id    String             @id @default(cuid())
-  kind  GmailProposalKind
-  state GmailProposalState @default(PENDING)
+// One suggested change from an email, waiting for the user to approve or reject it. Nothing
+// touches Application until it's approved.
+model EmailSuggestion {
+  id    String               @id @default(cuid())
+  kind  EmailSuggestionKind
+  state EmailSuggestionState @default(PENDING)
 
   // The email it came from (the latest one, if a later email about the same application
-  // superseded an earlier proposal before it was reviewed).
-  messageId   String
-  threadId    String
-  subject     String
-  sender      String
-  snippet     String
-  receivedAt  DateTime
+  // superseded an earlier suggestion before it was reviewed).
+  subject           String
+  sender            String
+  snippet           String
+  receivedAt        DateTime
+  originalMessageId String?
 
   // What the AI read out of the email.
   company    String
@@ -533,7 +554,7 @@ model GmailProposal {
   confidence Float
 
   proposedStatus ApplicationStatus
-  // STATUS_CHANGE only: the application it would move, and its status when the proposal was made.
+  // STATUS_CHANGE only: the application it would move, and its status when suggested.
   application    Application?       @relation(fields: [applicationId], references: [id], onDelete: SetNull)
   applicationId  String?
   fromStatus     ApplicationStatus?

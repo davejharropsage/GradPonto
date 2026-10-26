@@ -2,11 +2,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildGmailQuery,
   canonicalAddress,
   eventToStatus,
-  extractBodyText,
+  gmailFilterQuery,
+  gmailSearchUrl,
+  htmlToText,
+  inboxTokenFromRecipient,
   matchApplication,
+  messageKeyFor,
+  newInboxToken,
+  parseForwardingConfirmation,
+  parseInlineForward,
   planProposals,
   prefilterMessage,
   shouldProposeStatusChange,
@@ -14,8 +20,7 @@ import {
   type ClassifiedEmail,
   type MatchCandidate,
   type PendingProposal,
-} from "../src/lib/gmail/sync-core.ts";
-import { openSecret, sealSecret } from "../src/lib/auth/seal.ts";
+} from "../src/lib/inbound/core.ts";
 
 const ME = "lucas.harrop@gmail.com";
 
@@ -141,16 +146,14 @@ test("prefilterMessage skips mail with nothing application-shaped in it", () => 
   });
 });
 
-test("buildGmailQuery looks back 90 days first time, then from the last sync with an overlap", () => {
-  const now = new Date("2026-10-25T12:00:00Z");
-  const first = buildGmailQuery(null, now);
-  assert.match(first, new RegExp(`after:${Math.floor(now.getTime() / 1000) - 90 * 86400}\\b`));
-  assert.match(first, /-from:me/);
-  assert.match(first, /from:greenhouse\.io/);
-  assert.match(first, /"thank you for applying"/);
-
-  const last = new Date("2026-10-20T08:00:00Z");
-  assert.match(buildGmailQuery(last, now), new RegExp(`after:${Math.floor(last.getTime() / 1000) - 86400}\\b`));
+test("gmailFilterQuery ORs the phrases and ATS senders into one Gmail filter", () => {
+  const query = gmailFilterQuery();
+  assert.match(query, /^\{.*\}$/);
+  assert.match(query, /"thank you for applying"/);
+  assert.match(query, /from:myworkday\.com/);
+  assert.match(query, /from:greenhouse\.io/);
+  // Gmail rejects very long filters.
+  assert.ok(query.length < 1000, `${query.length} characters`);
 });
 
 // --- Matching ------------------------------------------------------------------------------------
@@ -280,43 +283,99 @@ test("unprocessedIds drops messages already in the ledger and repeats", () => {
   assert.deepEqual(unprocessedIds([], ["m1"]), []);
 });
 
+// --- Inbound addresses, dedupe keys ------------------------------------------------------------
+
+test("newInboxToken is 12 random lower-case alphanumerics", () => {
+  const a = newInboxToken();
+  assert.match(a, /^[a-z0-9]{12}$/);
+  assert.notEqual(a, newInboxToken());
+});
+
+test("inboxTokenFromRecipient reads the token only for our domain", () => {
+  assert.equal(inboxTokenFromRecipient("k3x9q2m7p1zz@in.gradponto.com", "in.gradponto.com"), "k3x9q2m7p1zz");
+  assert.equal(inboxTokenFromRecipient(" K3X9Q2M7P1ZZ+gmail@IN.gradponto.com ", "in.gradponto.com"), "k3x9q2m7p1zz");
+  assert.equal(inboxTokenFromRecipient("k3x9q2m7p1zz@gradponto.com", "in.gradponto.com"), null);
+  assert.equal(inboxTokenFromRecipient("short@in.gradponto.com", "in.gradponto.com"), null);
+  assert.equal(inboxTokenFromRecipient("not-an-address", "in.gradponto.com"), null);
+});
+
+test("messageKeyFor uses the Message-ID, so the same email forwarded twice dedupes", () => {
+  assert.equal(messageKeyFor({ messageId: "<ABC.123@mail.workday.com>" }), messageKeyFor({ messageId: "abc.123@mail.workday.com" }));
+  const a = messageKeyFor({ from: "a@x.com", subject: "Hi", date: "Mon, 20 Oct 2026" });
+  assert.match(a, /^hash:[0-9a-f]{40}$/);
+  assert.equal(a, messageKeyFor({ from: "a@x.com", subject: "Hi", date: "Mon, 20 Oct 2026" }));
+  assert.notEqual(a, messageKeyFor({ from: "a@x.com", subject: "Hi again", date: "Mon, 20 Oct 2026" }));
+});
+
+test("gmailSearchUrl searches by rfc822msgid", () => {
+  assert.equal(gmailSearchUrl("<abc@x.com>"), "https://mail.google.com/mail/u/0/#search/rfc822msgid%3Aabc%40x.com");
+});
+
+// --- Gmail forwarding confirmation ---------------------------------------------------------------
+
+test("parseForwardingConfirmation pulls out the code, link and Gmail address", () => {
+  const confirmation = parseForwardingConfirmation({
+    from: "Gmail Team <forwarding-noreply@google.com>",
+    subject: "(#618294751) Gmail Forwarding Confirmation - Receive Mail from lucas.harrop@gmail.com",
+    text:
+      "lucas.harrop@gmail.com has requested to automatically forward mail to your email address k3x9q2m7p1zz@in.gradponto.com.\n" +
+      "Confirmation code: 618294751\n\nTo allow lucas.harrop@gmail.com to automatically forward mail to your address, please click the link below to confirm the request:\n\n" +
+      "https://mail-settings.google.com/mail/vf-%5BANGjdJ8x%5D-abc123\n\nIf you click the link and it appears to be broken...",
+  });
+  assert.deepEqual(confirmation, {
+    code: "618294751",
+    url: "https://mail-settings.google.com/mail/vf-%5BANGjdJ8x%5D-abc123",
+    from: "lucas.harrop@gmail.com",
+  });
+});
+
+test("parseForwardingConfirmation ignores lookalikes from other senders", () => {
+  assert.equal(
+    parseForwardingConfirmation({ from: "evil@phish.example", subject: "(#1234567) Gmail Forwarding Confirmation - Receive Mail from x@gmail.com" }),
+    null
+  );
+  assert.equal(parseForwardingConfirmation({ from: "forwarding-noreply@google.com", subject: "Something else" }), null);
+});
+
+// --- Inline forwards ----------------------------------------------------------------------------
+
+test("parseInlineForward reads Gmail's forwarded-message block", () => {
+  const forward = parseInlineForward(
+    [
+      "FYI",
+      "",
+      "---------- Forwarded message ---------",
+      "From: Acme Careers <acme@myworkday.com>",
+      "Date: Mon, 20 Oct 2026 at 10:15",
+      "Subject: Thank you for applying",
+      "To: <lucas.harrop@gmail.com>",
+      "",
+      "Dear Lucas,",
+      "We have received your application.",
+    ].join("\n")
+  );
+  assert.deepEqual(forward, {
+    from: "Acme Careers <acme@myworkday.com>",
+    to: "<lucas.harrop@gmail.com>",
+    cc: "",
+    subject: "Thank you for applying",
+    date: "Mon, 20 Oct 2026 at 10:15",
+    text: "Dear Lucas,\nWe have received your application.",
+  });
+});
+
+test("parseInlineForward reads Outlook's original-message block and rejects plain mail", () => {
+  const forward = parseInlineForward(
+    "-----Original Message-----\nFrom: talent@globex.com\nSent: 21 October 2026 09:00\nTo: lucas@uni.ac.uk\nSubject: Interview invitation\n\nHi Lucas"
+  );
+  assert.equal(forward?.from, "talent@globex.com");
+  assert.equal(forward?.date, "21 October 2026 09:00");
+  assert.equal(forward?.text, "Hi Lucas");
+  assert.equal(parseInlineForward("Just a normal email\nFrom: me"), null);
+});
+
 // --- Bodies --------------------------------------------------------------------------------------
 
-test("extractBodyText prefers text/plain and falls back to stripped HTML", () => {
-  const b64 = (text: string) => Buffer.from(text).toString("base64url");
-  assert.equal(
-    extractBodyText({
-      mimeType: "multipart/alternative",
-      parts: [
-        { mimeType: "text/plain", body: { data: b64("Thanks for applying!\r\n") } },
-        { mimeType: "text/html", body: { data: b64("<p>Thanks for applying!</p>") } },
-      ],
-    }),
-    "Thanks for applying!"
-  );
-  assert.equal(
-    extractBodyText({ mimeType: "text/html", body: { data: b64("<style>p{}</style><p>Dear Lucas,</p><p>We&#39;re pleased</p>") } }),
-    "Dear Lucas,\nWe're pleased"
-  );
-});
-
-// --- Token sealing -------------------------------------------------------------------------------
-
-const SECRET = "test-secret-that-is-at-least-32-characters-long";
-
-test("sealSecret round-trips and never stores the plaintext", () => {
-  const sealed = sealSecret("1//refresh-token", SECRET, "gmail-refresh-token");
-  assert.ok(!sealed.includes("refresh-token"));
-  assert.notEqual(sealed, sealSecret("1//refresh-token", SECRET, "gmail-refresh-token")); // fresh IV each time
-  assert.equal(openSecret(sealed, SECRET, "gmail-refresh-token"), "1//refresh-token");
-});
-
-test("openSecret rejects a tampered value, the wrong secret, or the wrong purpose", () => {
-  const sealed = sealSecret("1//refresh-token", SECRET, "gmail-refresh-token");
-  const [v, iv, tag, ct] = sealed.split(".");
-  const flipped = ct.slice(0, -2) + (ct.slice(-2) === "AA" ? "AB" : "AA");
-  assert.equal(openSecret([v, iv, tag, flipped].join("."), SECRET, "gmail-refresh-token"), null);
-  assert.equal(openSecret(sealed, `${SECRET}-other`, "gmail-refresh-token"), null);
-  assert.equal(openSecret(sealed, SECRET, "something-else"), null);
-  assert.equal(openSecret("garbage", SECRET, "gmail-refresh-token"), null);
+test("htmlToText strips tags, styles and entities", () => {
+  assert.equal(htmlToText("<style>p{}</style><p>Dear Lucas,</p><p>We&#39;re pleased</p>"), "Dear Lucas,\nWe're pleased");
 });

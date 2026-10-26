@@ -14,9 +14,8 @@ export async function requireAiAllowance() {
 }
 
 /**
- * The same allowance, charged to a user the caller has already resolved — for callers that must
- * not go through requireRegisteredUser()'s impersonation substitution (Gmail sync charges the real
- * admin, see lib/gmail/sync.ts).
+ * The same allowance, charged to a user the caller has already resolved — for work with no signed-in
+ * request behind it, like classifying forwarded emails after the inbound webhook (lib/inbound/process.ts).
  */
 export async function consumeAiAllowance(userId: string) {
   if (isRateLimitedKey(`ai:${userId}`, AI_CALLS_PER_HOUR, 60 * 60 * 1000)) {
