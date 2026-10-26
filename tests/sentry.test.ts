@@ -51,6 +51,8 @@ test("Sentry is off without a DSN, and never sends default PII", () => {
   process.env.NEXT_PUBLIC_SENTRY_DSN = "https://public@o1.ingest.de.sentry.io/1";
   assert.equal(sentryEnabled(), true);
   assert.equal(sentryOptions().sendDefaultPii, false);
+  // Otherwise beforeSendTransaction (and so the trace scrubber) is skipped.
+  assert.equal(sentryOptions().traceLifecycle, "static");
   if (saved === undefined) delete process.env.NEXT_PUBLIC_SENTRY_DSN;
   else process.env.NEXT_PUBLIC_SENTRY_DSN = saved;
 });
