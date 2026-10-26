@@ -2,12 +2,13 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { sendMail } from "@/lib/auth/mailer";
+import { sentryEnabled } from "@/lib/sentry-options";
 
 /**
  * Error logging and owner alerts. Everything that goes wrong on the server ends up in logError()
- * (Vercel → Logs), and anything that needs a human — an unexpected crash, an AI outage, a daily
- * spending cap reached — also goes to alertOwner(), which emails ALERT_EMAIL (or, if that's
- * unset, everyone in ADMIN_EMAILS).
+ * (Vercel → Logs). Unexpected crashes go to Sentry when it's set up (reportError), otherwise by
+ * email; things that need a human whatever happens — an AI outage, a daily spending cap reached —
+ * go to alertOwner(), which emails ALERT_EMAIL (or, if that's unset, everyone in ADMIN_EMAILS).
  *
  * Alerts are throttled in the database, not in memory, so it holds across Vercel's many server
  * instances: at most one email per distinct problem per hour, and ALERTS_PER_DAY in total. Like
@@ -82,9 +83,23 @@ export async function alertOwner(key: string, subject: string, details: string):
   }
 }
 
-/** logError + alertOwner, for failures someone needs to look at. */
+/**
+ * For failures someone needs to look at: logs it, then sends it to Sentry when Sentry is set up
+ * (grouped, with a stack trace, and Sentry does the notifying), or emails the owner when it isn't.
+ * Cap and outage notices call alertOwner() directly, so they always come by email either way.
+ */
 export async function reportError(context: string, error: unknown, extra: Record<string, unknown> = {}): Promise<void> {
   logError(context, error, extra);
+  if (sentryEnabled()) {
+    try {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException(error, { tags: { context }, extra });
+      return;
+    } catch (sentryError) {
+      logError("Sentry capture", sentryError);
+      // Fall through to the email alert.
+    }
+  }
   const { name, message, digest } = describe(error);
   const where = Object.entries(extra)
     .map(([k, v]) => `${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`)

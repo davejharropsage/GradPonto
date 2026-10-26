@@ -33,6 +33,7 @@ GradPonto is made of a few online services. Nothing runs on your own computer.
 | **Email provider (SMTP)** | Sends sign-up codes, password resets and welcome emails. | Whichever provider `SMTP_HOST` points at |
 | **Postmark** | Receives the emails users forward to Email import. Charged per email received. | [postmarkapp.com](https://postmarkapp.com) |
 | **Adzuna** | The job listings behind Find placements. Free, but limited to 250 searches a day. | [developer.adzuna.com](https://developer.adzuna.com) |
+| **Sentry** (once set up) | Records crashes, on the server and in people's browsers, with the exact line of code. Personal details are stripped before anything is sent. | [sentry.io](https://sentry.io) (EU region) |
 | **Wix** | Where the gradponto.com domain's DNS records are managed. | Wix → **Domains** |
 | **Google / Microsoft** | The optional "Continue with Google/Microsoft" sign-in buttons. | Google Cloud Console / Microsoft Entra |
 
@@ -73,13 +74,16 @@ safety net.
 
 ### You'll usually hear about it first
 
-GradPonto emails **alerts** to the address in `ALERT_EMAIL` (or, if that's empty, everyone in
+**Crashes** go to **Sentry**, once it's set up (`NEXT_PUBLIC_SENTRY_DSN` in Vercel). Sentry emails you
+about new problems and groups repeats, and each one shows the line of code, the page, and the browser.
+Until Sentry is set up, crashes come as alert emails instead.
+
+GradPonto also emails **alerts** to the address in `ALERT_EMAIL` (or, if that's empty, everyone in
 `ADMIN_EMAILS`) when:
 
-- the website hits an error it didn't expect;
 - the AI service stops working, or rejects the key;
 - a daily spending cap is reached;
-- forwarded emails can't be processed.
+- the website hits an error it didn't expect (only while Sentry isn't set up).
 
 You get at most one email an hour about the same problem, so a flood of errors doesn't flood your inbox.
 Alerts are sent through the same email provider as sign-up codes, so **if email itself is broken,
@@ -87,12 +91,14 @@ alerts can't arrive either**. In that case people will say sign-up codes aren't 
 
 ### Where to look
 
-1. **Vercel → project → Logs.** Every error is written here with the words `[gradponto]` and a short
+1. **Sentry → Issues** (once set up): every crash, newest first, with the code line and how often
+   it has happened.
+2. **Vercel → project → Logs.** Every error is written here with the words `[gradponto]` and a short
    description of where it happened. Filter by "Error" and search for the words from the alert.
-2. **Admin → Usage** in GradPonto: has a cap been reached?
-3. **Vercel → project → Deployments:** did the last deployment fail (red), or did problems start just
+3. **Admin → Usage** in GradPonto: has a cap been reached?
+4. **Vercel → project → Deployments:** did the last deployment fail (red), or did problems start just
    after one?
-4. **The provider's own dashboard or status page:** Gemini, your email provider, Postmark, Neon.
+5. **The provider's own dashboard or status page:** Gemini, your email provider, Postmark, Neon.
 
 ### Common problems
 
