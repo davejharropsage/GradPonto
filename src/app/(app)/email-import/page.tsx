@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { MailX } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -8,8 +9,10 @@ import { getEmailImportOverview, getOrCreateInbox } from "@/lib/data/email-impor
 import { gmailFilterQuery, gmailSearchUrl } from "@/lib/inbound/core";
 import { inboundAddress, inboundConfigured } from "@/lib/inbound/config";
 import { formatRelativeTime } from "@/lib/format";
+import { processInboundQueue } from "@/lib/inbound/process";
+import { logError } from "@/lib/monitoring";
 
-// "Process now" classifies queued emails in a server action on this page; give it room.
+// "Process now" (and the automatic retry when the page opens) classify queued emails; give them room.
 export const maxDuration = 60;
 
 const skipLabels: Record<string, string> = {
@@ -36,6 +39,18 @@ export default async function EmailImportPage() {
   const user = await requireRegisteredUser();
   const inbox = await getOrCreateInbox();
   const { suggestions, waiting, received, lastSkipped } = await getEmailImportOverview();
+
+  // Emails still waiting (the AI was busy when they arrived): retry in the background now, after the
+  // page has been sent, rather than leaving it to the "Process" button or the 15-minute schedule.
+  if (waiting > 0) {
+    after(async () => {
+      try {
+        await processInboundQueue(user.id);
+      } catch (error) {
+        logError("Email import page retry", error, { userId: user.id });
+      }
+    });
+  }
 
   const views: SuggestionView[] = suggestions.map((suggestion) => ({
     id: suggestion.id,

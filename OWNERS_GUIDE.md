@@ -110,7 +110,7 @@ alerts can't arrive either**. In that case people will say sign-up codes aren't 
 | "AI features have reached their limit for today" | `AI_DAILY_LIMIT` reached | Wait until tomorrow, or raise the cap if the use is genuine (see above). |
 | "Search is very busy" / "limit for today" in Find placements | Adzuna's shared allowance is used up | Nothing to fix; it resets daily. |
 | Email import shows nothing new | Forwarding isn't reaching Postmark, or Postmark can't reach the site | Postmark → **Activity**: no emails means check the Wix MX record (`in` → `inbound.postmarkapp.com`). Errors on the webhook mean check that `INBOUND_WEBHOOK_SECRET` in Vercel matches the password in Postmark's webhook URL. |
-| Email import emails stuck "waiting" | The AI was unavailable when they arrived | The user can press **Process** on the Email import page once the AI is back. |
+| Email import emails stuck "waiting" | The AI was busy or unavailable when they arrived | Nothing: GradPonto retries every 15 minutes (Vercel → project → **Settings → Cron Jobs** shows the schedule and its runs), and whenever the user opens the Email import page. If they stay stuck for hours, check the AI key (row above). |
 | One person can't sign in | Their account is suspended or paused | Admin → find them → **Reinstate**. |
 
 ### If a password or key leaks
