@@ -21,6 +21,10 @@ const PUBLIC = [
   /^\/terms$/,
   /^\/dev\/outbox$/,
   /^\/api\/auth\/oauth\//,
+  // The inbound email provider's webhook; it authenticates itself (see the route).
+  /^\/api\/inbound\//,
+  // Sentry's tunnel (next.config.ts): browser error reports, including from signed-out pages.
+  /^\/monitoring(\/|$)/,
 ];
 
 export function proxy(request: NextRequest) {

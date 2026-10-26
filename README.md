@@ -1,5 +1,7 @@
 # GradPonto
 
+> **Running GradPonto rather than developing it?** Start with [OWNERS_GUIDE.md](OWNERS_GUIDE.md): what it does, what it runs on, spending limits, and what to do when something breaks.
+
 A web app for UK graduates to track placement / graduate job applications: log opportunities, tailor a CV and cover letter per job (optionally with AI help), export a finished PDF, and track each application's status from first interest through to an offer, on a dashboard, a card grid, or a drag-and-drop kanban pipeline.
 
 People sign in with their email (a one-time code, no password), register with their name and university, and only ever see their own data. See [Accounts & sign-in](#accounts--sign-in).
@@ -194,6 +196,24 @@ Vercel preview deployments use the live `APP_URL`, so provider sign-in on a prev
 3. **Certificates & secrets → New client secret**, then copy its **Value** (not the Secret ID) into `MICROSOFT_CLIENT_SECRET`. Secrets expire (the maximum is 2 years), so note the date.
 
 For the live site, add the same four variables in Vercel (**Settings → Environment Variables**) and redeploy.
+
+### Email import
+
+**Email import** (in the sidebar) gives each user a private forwarding address, `<token>@in.gradponto.com`. They point a Gmail filter at it (the page shows the exact filter text and walks them through Gmail's forwarding confirmation, whose code/link it displays), and can bring in older mail with Gmail's *Forward as attachment*. Each email is pre-filtered (must be addressed to one of the user's own addresses, which drops spam to strangers; job-board newsletters and alerts are skipped), classified by the AI, matched to their applications and shown as a suggestion. Nothing is written to applications until a suggestion is approved.
+
+Code: `src/lib/inbound/` (`core.ts` is the pure filtering/matching/parsing logic, tested in `tests/email-import.test.ts`; `ingest.ts` files incoming mail; `process.ts` classifies the queue), `src/app/api/inbound/postmark/route.ts` (the webhook), `src/lib/ai/classify-email.ts`, `src/app/(app)/email-import/`. Email bodies are deleted once classified; only the subject, sender and a short snippet are kept.
+
+Setup (DNS for gradponto.com is at Wix):
+
+1. **Postmark** ([postmarkapp.com](https://postmarkapp.com)): create a server, open its **Default Inbound Stream → Settings**.
+   - **Inbound domain:** `in.gradponto.com`.
+   - **Webhook URL:** `https://postmark:<INBOUND_WEBHOOK_SECRET>@gradponto.com/api/inbound/postmark` (the secret is the password; the user name is ignored).
+   - Leave "Include raw email content" **off** (it doubles the payload, and Vercel caps a request at 4.5 MB).
+2. **DNS (Wix → Domains → gradponto.com → Manage DNS records → MX):** add an MX record with host `in`, value `inbound.postmarkapp.com`, priority `10`. Only the `in.` subdomain changes; mail to `@gradponto.com` itself is unaffected.
+3. **Vercel env vars** (Production, and Preview if you want it there): `INBOUND_EMAIL_DOMAIN=in.gradponto.com` and `INBOUND_WEBHOOK_SECRET=<the same random secret>`. Redeploy.
+4. Check it: open **Email import**, copy your address, and send it any email from the address you signed up with containing the word "application". It shows up under "Recently ignored" or as a suggestion within a minute. Postmark's **Activity** tab shows every delivery and its webhook response.
+
+Limits: a webhook body over 4.5 MB is refused by Vercel, so "Forward as attachment" batches should be ~25 emails. Each inbox accepts up to 120 messages an hour, and AI classification uses the user's normal hourly AI allowance (anything over waits in the queue; the page has a "Process" button).
 
 ### Email
 

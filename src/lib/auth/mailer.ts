@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import nodemailer from "nodemailer";
+import { takeDailyAllowance } from "@/lib/limits";
 
 export interface Mail {
   to: string;
@@ -28,10 +29,21 @@ export function mailMode(): "smtp" | "dev-outbox" {
 
 const OUTBOX_DIR = path.join(process.cwd(), ".mail-outbox");
 
-export async function sendMail(mail: Mail): Promise<void> {
+/**
+ * `alert`: an owner alert from lib/monitoring.ts. Those skip the daily sending cap (they have their
+ * own, smaller one) — otherwise "the email cap was reached" could never be delivered.
+ */
+export async function sendMail(mail: Mail, { alert = false }: { alert?: boolean } = {}): Promise<void> {
   if (mailMode() === "smtp") {
     const from = process.env.MAIL_FROM;
     if (!from) throw new Error("MAIL_FROM must be set when SMTP_HOST is set (e.g. \"GradPonto <no-reply@yourdomain>\").");
+
+    // Most SMTP providers have a daily quota (and some bill past it); MAIL_DAILY_LIMIT keeps a
+    // flood of sign-ups or a bug from spending it. Callers already turn a failure here into
+    // "we couldn't send the email just now".
+    if (!alert && !(await takeDailyAllowance("MAIL", { total: "MAIL" })).ok) {
+      throw new Error("Daily email sending limit reached (MAIL_DAILY_LIMIT).");
+    }
 
     const port = Number(process.env.SMTP_PORT || 587);
     const secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : port === 465;

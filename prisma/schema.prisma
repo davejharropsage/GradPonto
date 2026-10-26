@@ -103,6 +103,10 @@ model User {
   skills       Skill[]
   projects     Project[]
 
+  emailInbox       EmailInbox?
+  inboundEmails    InboundEmail[]
+  emailSuggestions EmailSuggestion[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -215,8 +219,9 @@ model Application {
   // the scoped client fails the foreign-key check instead of creating misfiled data.
   userId String @default("")
 
-  documents  Document[]
-  activities Activity[]
+  documents      Document[]
+  activities     Activity[]
+  emailSuggestions EmailSuggestion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -446,4 +451,121 @@ model UsageEvent {
   createdAt DateTime @default(now())
 
   @@index([kind, createdAt])
+}
+
+// --- Email import (src/lib/inbound) -------------------------------------------------------------
+//
+// Users forward application emails (a Gmail filter, or "Forward as attachment" for older mail) to
+// a private address of their own on INBOUND_EMAIL_DOMAIN. An inbound email provider (Postmark)
+// posts each one to /api/inbound/postmark; it's filtered, classified by the AI and turned into
+// suggestions the user reviews. All three are per-user data in scoped-db.ts's OWNED_MODELS.
+
+// A user's private forwarding address, `<token>@<INBOUND_EMAIL_DOMAIN>`. The token is the only
+// thing that says whose mail it is, so it's long and random, and the user can reset it.
+model EmailInbox {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  // The user's own mailbox addresses besides their sign-in email. Mail that isn't addressed to one
+  // of these (or the sign-in email) is ignored, which is what drops spam sent to strangers.
+  // Learned from Gmail's forwarding confirmation and from forwards the user sends; editable.
+  knownAddresses String[]
+
+  // The latest "Gmail Forwarding Confirmation" email, shown so the user can finish setup.
+  forwardingCode        String?
+  forwardingUrl         String?
+  forwardingFrom        String?
+  forwardingRequestedAt DateTime?
+
+  lastReceivedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum InboundEmailStatus {
+  QUEUED // waiting to be classified
+  PROCESSING // claimed by a worker (see lib/inbound/process.ts)
+  DONE
+}
+
+// Every email that has arrived, whatever came of it. `messageKey` (the original Message-ID, or a
+// hash when there isn't one) is what stops the same email being processed twice — e.g. forwarded
+// by the filter and later again as an attachment.
+model InboundEmail {
+  id                String             @id @default(cuid())
+  messageKey        String
+  originalMessageId String?
+  sender            String
+  subject           String
+  snippet           String
+  receivedAt        DateTime
+  // Only kept until it's been classified, then cleared: the rest of the email isn't needed.
+  bodyText          String?
+  status            InboundEmailStatus @default(QUEUED)
+  // Once DONE: "skipped:<reason>", "irrelevant", "no-change", "duplicate" or "proposed".
+  outcome           String?
+  claimId           String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, messageKey])
+  @@index([userId, status])
+}
+
+enum EmailSuggestionKind {
+  NEW_APPLICATION
+  STATUS_CHANGE
+}
+
+enum EmailSuggestionState {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// One suggested change from an email, waiting for the user to approve or reject it. Nothing
+// touches Application until it's approved.
+model EmailSuggestion {
+  id    String               @id @default(cuid())
+  kind  EmailSuggestionKind
+  state EmailSuggestionState @default(PENDING)
+
+  // The email it came from (the latest one, if a later email about the same application
+  // superseded an earlier suggestion before it was reviewed).
+  subject           String
+  sender            String
+  snippet           String
+  receivedAt        DateTime
+  originalMessageId String?
+
+  // What the AI read out of the email.
+  company    String
+  roleTitle  String
+  jobUrl     String?
+  reference  String?
+  event      String // applied | online_assessment | video_interview | interview | assessment_centre | offer | rejected | withdrawn
+  confidence Float
+
+  proposedStatus ApplicationStatus
+  // STATUS_CHANGE only: the application it would move, and its status when suggested.
+  application    Application?       @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  applicationId  String?
+  fromStatus     ApplicationStatus?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @default("")
+
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([userId, state])
+  @@index([applicationId])
 }

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { alertOwner, logError } from "@/lib/monitoring";
 
 // AI features are optional. Google's Gemini (free key from https://aistudio.google.com) is used when
 // GEMINI_API_KEY is set; otherwise Anthropic's Claude if ANTHROPIC_API_KEY is set; otherwise the
@@ -78,22 +79,35 @@ async function generateWithGemini(prompt: string, json: boolean, maxTokens: numb
           body,
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
-      } catch {
+      } catch (error) {
         // A network-level failure (timeout, DNS, a dropped connection) rather than an HTTP error —
         // try the next model instead of giving up immediately; a different endpoint may still answer.
+        logError("Gemini request", error, { model, round });
         response = undefined;
         continue;
       }
       if (!RETRY_NEXT_MODEL_STATUSES.has(response.status)) break outer;
+      logError("Gemini request", new Error(`HTTP ${response.status}, trying the next model`), { model, round });
     }
     if (round < ROUNDS - 1) await new Promise((resolve) => setTimeout(resolve, 1500));
   }
 
   if (!response) {
+    await alertAiOutage("no response from any Gemini model (network errors or timeouts)");
     throw new AiRequestError("The AI service didn't respond. Please try again in a moment.");
   }
   if (!response.ok) {
     const status = response.status;
+    // The body is Google's error description (never the key, which goes in a header).
+    const detail = (await response.text().catch(() => "")).slice(0, 500);
+    logError("Gemini request", new Error(`HTTP ${status}`), { detail });
+    await alertAiOutage(
+      status === 429
+        ? "Gemini returned 429 for every model: the API key's quota is used up."
+        : status === 400 || status === 401 || status === 403
+          ? `Gemini rejected the request (HTTP ${status}). The API key may be invalid, restricted or out of credit.\n\n${detail}`
+          : `Gemini is failing (HTTP ${status}).\n\n${detail}`
+    );
     if (status === 429) throw new AiRequestError("The free AI allowance is used up for the moment. Please try again in a minute.");
     if (status === 400 || status === 401 || status === 403) {
       throw new AiRequestError("The AI service rejected the request. Check that GEMINI_API_KEY in .env is valid.");
@@ -111,11 +125,21 @@ async function generateWithGemini(prompt: string, json: boolean, maxTokens: numb
 
 async function generateWithClaude(prompt: string, maxTokens: number): Promise<string> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const message = await client.messages.create({
-    model: "claude-sonnet-5",
-    max_tokens: maxTokens,
-    messages: [{ role: "user", content: prompt }],
-  });
+  let message;
+  try {
+    message = await client.messages.create({
+      model: "claude-sonnet-5",
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }],
+    });
+  } catch (error) {
+    logError("Claude request", error);
+    const status = error instanceof Anthropic.APIError ? error.status : undefined;
+    await alertAiOutage(`The Claude API request failed${status ? ` (HTTP ${status})` : ""}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new AiRequestError(
+      status === 429 ? "The AI service is busy right now. Please try again in a minute." : "The AI service is unavailable right now. Please try again in a moment."
+    );
+  }
   const block = message.content.find((item) => item.type === "text");
   return block?.type === "text" ? block.text : "";
 }
@@ -128,4 +152,10 @@ export function extractJson<T>(text: string): T {
   } catch {
     throw new AiRequestError("The AI answer wasn't in the expected format. Please try again.");
   }
+}
+
+// One alert an hour at most (lib/monitoring.ts throttles by key): every AI feature fails at once
+// when the provider does, and the owner needs to hear about it once, not once per user.
+function alertAiOutage(details: string) {
+  return alertOwner("ai-outage", "AI requests are failing", `${details}\n\nAnalyse a Job, the Application Reviewer and Email import are affected until it recovers.`);
 }
