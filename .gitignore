@@ -54,4 +54,7 @@ next-env.d.ts
 
 # dev inbox: contains sign-in codes
 /.mail-outbox
+
+# Archify diagram drafts and check receipts (generated; share the HTML directly)
+/.archify/
 vercel-logs.txt
