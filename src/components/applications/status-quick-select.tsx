@@ -30,7 +30,7 @@ export function StatusQuickSelect({ applicationId, status }: { applicationId: st
       <SelectTrigger
         size="sm"
         className={cn(
-          "h-5 w-fit gap-1 rounded-4xl border-transparent px-2 py-0.5 text-xs font-medium shadow-none",
+          "h-5 w-fit gap-1 rounded-4xl border-transparent px-2 [&_svg]:!text-current py-0.5 text-xs font-medium shadow-none",
           applicationStatusColors[status]
         )}
       >
