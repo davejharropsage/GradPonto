@@ -18,7 +18,8 @@ import {
   processEmailsNow,
   rejectEmailSuggestion,
 } from "@/lib/actions/email-import";
-import { applicationStatusColors, applicationStatusLabels, applicationStatuses } from "@/lib/labels";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { applicationStatusLabels, applicationStatuses } from "@/lib/labels";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -58,14 +59,6 @@ const eventLabels: Record<string, string> = {
   rejected: "Rejection",
   withdrawn: "Withdrawal",
 };
-
-function StatusPill({ status }: { status: string }) {
-  return (
-    <span className={cn("inline-flex rounded-4xl px-2 py-0.5 text-xs font-medium", applicationStatusColors[status])}>
-      {applicationStatusLabels[status] ?? status}
-    </span>
-  );
-}
 
 export function SuggestionsPanel({ suggestions, waiting }: { suggestions: SuggestionView[]; waiting: number }) {
   const router = useRouter();
@@ -298,7 +291,7 @@ function SuggestionCard({
               {suggestion.application.company ? `${suggestion.application.company} · ` : ""}
               {suggestion.application.title}
             </Link>
-            <StatusPill status={suggestion.application.status} />
+            <StatusBadge status={suggestion.application.status} />
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
             {statusSelect}
           </div>

@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { applicationStatusLabels, applicationStatusColors, priorityLabels, priorityColors } from "@/lib/labels";
+import { PriorityBadge, StatusBadge } from "@/components/shared/status-badge";
 import { formatDate, isOverdue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Application, Employer } from "@/generated/prisma/client";
@@ -30,12 +29,8 @@ export function DeadlineItem({ application }: { application: ApplicationWithEmpl
       <p className="mt-0.5 text-sm text-muted-foreground">{application.title}</p>
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <Badge className={applicationStatusColors[application.status]} variant="outline">
-          {applicationStatusLabels[application.status]}
-        </Badge>
-        <Badge className={priorityColors[application.priority]} variant="outline">
-          {priorityLabels[application.priority]}
-        </Badge>
+        <StatusBadge status={application.status} />
+        <PriorityBadge priority={application.priority} />
       </div>
 
       <p className="mt-2 text-sm text-muted-foreground">

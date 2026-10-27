@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useDraggable } from "@dnd-kit/core";
 import { GripVertical, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { priorityLabels, priorityColors } from "@/lib/labels";
+import { PriorityBadge } from "@/components/shared/status-badge";
 import { daysUntil, isOverdue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Application, Employer } from "@/generated/prisma/client";
@@ -42,9 +42,7 @@ export function PipelineCardBody({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
-        <Badge className={priorityColors[application.priority]} variant="outline">
-          {priorityLabels[application.priority]}
-        </Badge>
+        <PriorityBadge priority={application.priority} />
         {application.deadline && (
           <Badge variant="outline" className={isOverdue(application.deadline) ? "border-red-300 text-red-600 dark:text-red-400" : ""}>
             {isOverdue(application.deadline) ? "Overdue" : `${daysUntil(application.deadline)} days left`}

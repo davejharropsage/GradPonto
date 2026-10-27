@@ -17,7 +17,7 @@ import { getApplication } from "@/lib/data/applications";
 import { getBaseDocuments } from "@/lib/data/documents";
 import { deleteApplication } from "@/lib/actions/applications";
 import { isAiConfigured } from "@/lib/ai/client";
-import { applicationStatusLabels, applicationStatusColors, priorityLabels, priorityColors } from "@/lib/labels";
+import { PriorityBadge, StatusBadge } from "@/components/shared/status-badge";
 import { formatDate } from "@/lib/format";
 
 export default async function ApplicationDetailPage({
@@ -66,12 +66,8 @@ export default async function ApplicationDetailPage({
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex flex-wrap gap-1.5">
-                <Badge className={applicationStatusColors[application.status]} variant="outline">
-                  {applicationStatusLabels[application.status]}
-                </Badge>
-                <Badge className={priorityColors[application.priority]} variant="outline">
-                  {priorityLabels[application.priority]}
-                </Badge>
+                <StatusBadge status={application.status} />
+                <PriorityBadge priority={application.priority} />
                 {application.archived && (
                   <Badge variant="outline" className="text-muted-foreground">
                     Archived
