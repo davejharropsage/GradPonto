@@ -35,32 +35,18 @@ export const applicationStatusVariants: Record<string, "default" | "secondary" |
   WITHDRAWN: "destructive",
 };
 
-// Solid, high-contrast fills in primary colours (red, yellow, blue, plus green for an offer), so a
-// status is readable at a glance in light and dark mode. Grey and black are the "not in play" states.
-// dark:bg / dark:hover:bg repeat the fill so it beats the status select trigger's own dark-mode background.
-export const applicationStatusColors: Record<string, string> = {
-  INTERESTED: "border-transparent bg-gray-500 text-white dark:bg-gray-500 dark:hover:bg-gray-500",
-  NOT_STARTED: "border-transparent bg-gray-500 text-white dark:bg-gray-500 dark:hover:bg-gray-500",
-  PREPARING: "border-transparent bg-yellow-400 text-black dark:bg-yellow-400 dark:hover:bg-yellow-400",
-  APPLIED: "border-transparent bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-600",
-  ONLINE_ASSESSMENT: "border-transparent bg-blue-900 text-white dark:bg-blue-900 dark:hover:bg-blue-900",
-  VIDEO_INTERVIEW: "border-transparent bg-blue-900 text-white dark:bg-blue-900 dark:hover:bg-blue-900",
-  OFFER: "border-transparent bg-green-600 text-white dark:bg-green-600 dark:hover:bg-green-600",
-  REJECTED: "border-transparent bg-red-600 text-white dark:bg-red-600 dark:hover:bg-red-600",
-  WITHDRAWN: "border-transparent bg-black text-white dark:bg-gray-700 dark:hover:bg-gray-700",
-};
-
-/** The same colours as applicationStatusColors, as a plain dot (pipeline column headers). */
+// Each status and priority is shown as a neutral pill with a small coloured dot (see
+// components/shared/status-badge.tsx): calm enough for long lists, with the colour still clear.
 export const applicationStatusDotColors: Record<string, string> = {
-  INTERESTED: "bg-gray-500",
-  NOT_STARTED: "bg-gray-500",
-  PREPARING: "bg-yellow-400",
-  APPLIED: "bg-blue-600",
-  ONLINE_ASSESSMENT: "bg-blue-900 dark:bg-blue-400",
-  VIDEO_INTERVIEW: "bg-blue-900 dark:bg-blue-400",
-  OFFER: "bg-green-600",
-  REJECTED: "bg-red-600",
-  WITHDRAWN: "bg-black dark:bg-gray-400",
+  INTERESTED: "bg-gray-400",
+  NOT_STARTED: "bg-gray-400",
+  PREPARING: "bg-amber-500",
+  APPLIED: "bg-blue-500",
+  ONLINE_ASSESSMENT: "bg-indigo-500",
+  VIDEO_INTERVIEW: "bg-indigo-500",
+  OFFER: "bg-green-500",
+  REJECTED: "bg-red-500",
+  WITHDRAWN: "bg-gray-500",
 };
 
 // Statuses that represent an application still actively in play.
@@ -79,16 +65,10 @@ export const priorityLabels: Record<string, string> = {
   HIGH: "High priority",
 };
 
-export const priorityColors: Record<string, string> = {
-  LOW: "border-transparent bg-blue-600 text-white",
-  MEDIUM: "border-transparent bg-yellow-400 text-black",
-  HIGH: "border-transparent bg-red-600 text-white",
-};
-
 export const priorityDotColors: Record<string, string> = {
-  LOW: "bg-blue-600",
-  MEDIUM: "bg-yellow-400",
-  HIGH: "bg-red-600",
+  LOW: "bg-blue-500",
+  MEDIUM: "bg-amber-500",
+  HIGH: "bg-red-500",
 };
 
 export const activityTypeLabels: Record<string, string> = {

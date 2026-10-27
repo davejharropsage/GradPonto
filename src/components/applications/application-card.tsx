@@ -10,7 +10,7 @@ import { DuplicateButton } from "./duplicate-button";
 import { ArchiveButton } from "./archive-button";
 import { InlineDeleteButton } from "@/components/shared/inline-delete-button";
 import { deleteApplication } from "@/lib/actions/applications";
-import { priorityLabels, priorityColors } from "@/lib/labels";
+import { PriorityBadge } from "@/components/shared/status-badge";
 import type { Application, Employer } from "@/generated/prisma/client";
 
 type ApplicationWithEmployer = Application & { employer: Employer | null };
@@ -53,9 +53,7 @@ export function ApplicationCard({
 
       <div className="flex flex-wrap items-center gap-1.5">
         <StatusQuickSelect applicationId={application.id} status={application.status} />
-        <Badge className={priorityColors[application.priority]} variant="outline">
-          {priorityLabels[application.priority]}
-        </Badge>
+        <PriorityBadge priority={application.priority} />
         {application.archived && (
           <Badge variant="outline" className="text-muted-foreground">
             Archived
