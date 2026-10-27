@@ -35,18 +35,32 @@ export const applicationStatusVariants: Record<string, "default" | "secondary" |
   WITHDRAWN: "destructive",
 };
 
-// Tailwind classes for a stronger color cue than the plain Badge variants give,
-// matching the reference design's colored status pills.
+// Solid, high-contrast fills in primary colours (red, yellow, blue, plus green for an offer), so a
+// status is readable at a glance in light and dark mode. Grey and black are the "not in play" states.
+// dark:bg / dark:hover:bg repeat the fill so it beats the status select trigger's own dark-mode background.
 export const applicationStatusColors: Record<string, string> = {
-  INTERESTED: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  NOT_STARTED: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  PREPARING: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-  APPLIED: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-  ONLINE_ASSESSMENT: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
-  VIDEO_INTERVIEW: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
-  OFFER: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-  REJECTED: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-  WITHDRAWN: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  INTERESTED: "border-transparent bg-gray-500 text-white dark:bg-gray-500 dark:hover:bg-gray-500",
+  NOT_STARTED: "border-transparent bg-gray-500 text-white dark:bg-gray-500 dark:hover:bg-gray-500",
+  PREPARING: "border-transparent bg-yellow-400 text-black dark:bg-yellow-400 dark:hover:bg-yellow-400",
+  APPLIED: "border-transparent bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-600",
+  ONLINE_ASSESSMENT: "border-transparent bg-blue-900 text-white dark:bg-blue-900 dark:hover:bg-blue-900",
+  VIDEO_INTERVIEW: "border-transparent bg-blue-900 text-white dark:bg-blue-900 dark:hover:bg-blue-900",
+  OFFER: "border-transparent bg-green-600 text-white dark:bg-green-600 dark:hover:bg-green-600",
+  REJECTED: "border-transparent bg-red-600 text-white dark:bg-red-600 dark:hover:bg-red-600",
+  WITHDRAWN: "border-transparent bg-black text-white dark:bg-gray-700 dark:hover:bg-gray-700",
+};
+
+/** The same colours as applicationStatusColors, as a plain dot (pipeline column headers). */
+export const applicationStatusDotColors: Record<string, string> = {
+  INTERESTED: "bg-gray-500",
+  NOT_STARTED: "bg-gray-500",
+  PREPARING: "bg-yellow-400",
+  APPLIED: "bg-blue-600",
+  ONLINE_ASSESSMENT: "bg-blue-900 dark:bg-blue-400",
+  VIDEO_INTERVIEW: "bg-blue-900 dark:bg-blue-400",
+  OFFER: "bg-green-600",
+  REJECTED: "bg-red-600",
+  WITHDRAWN: "bg-black dark:bg-gray-400",
 };
 
 // Statuses that represent an application still actively in play.
@@ -66,15 +80,15 @@ export const priorityLabels: Record<string, string> = {
 };
 
 export const priorityColors: Record<string, string> = {
-  LOW: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-  MEDIUM: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-  HIGH: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+  LOW: "border-transparent bg-blue-600 text-white",
+  MEDIUM: "border-transparent bg-yellow-400 text-black",
+  HIGH: "border-transparent bg-red-600 text-white",
 };
 
 export const priorityDotColors: Record<string, string> = {
-  LOW: "bg-slate-400",
-  MEDIUM: "bg-amber-500",
-  HIGH: "bg-red-500",
+  LOW: "bg-blue-600",
+  MEDIUM: "bg-yellow-400",
+  HIGH: "bg-red-600",
 };
 
 export const activityTypeLabels: Record<string, string> = {

@@ -27,22 +27,10 @@ import {
   type PipelineFilterState,
 } from "./pipeline-filters";
 import { updateApplicationStatus } from "@/lib/actions/applications";
-import { applicationStatuses, applicationStatusLabels } from "@/lib/labels";
+import { applicationStatusDotColors, applicationStatuses, applicationStatusLabels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
 type Groups = Record<string, ApplicationWithEmployer[]>;
-
-const columnDotColors: Record<string, string> = {
-  INTERESTED: "bg-slate-400",
-  NOT_STARTED: "bg-slate-300",
-  PREPARING: "bg-amber-500",
-  APPLIED: "bg-blue-500",
-  ONLINE_ASSESSMENT: "bg-purple-500",
-  VIDEO_INTERVIEW: "bg-sky-500",
-  OFFER: "bg-emerald-500",
-  REJECTED: "bg-red-500",
-  WITHDRAWN: "bg-gray-400",
-};
 
 // Columns are large drop zones, so "where is the pointer" is the natural test; the rectangle test
 // covers keyboard dragging, where there is no pointer.
@@ -90,7 +78,7 @@ function Column({ status, items, activeId }: { status: string; items: Applicatio
       )}
     >
       <div className="mb-3 flex items-center gap-2 px-1">
-        <span className={cn("h-2 w-2 rounded-full", columnDotColors[status])} />
+        <span className={cn("h-2 w-2 rounded-full", applicationStatusDotColors[status])} />
         <h3 className="font-sans text-sm font-semibold [font-stretch:100%]">{applicationStatusLabels[status]}</h3>
         <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{items.length}</span>
       </div>
