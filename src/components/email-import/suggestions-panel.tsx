@@ -125,6 +125,12 @@ export function SuggestionsPanel({ suggestions, waiting }: { suggestions: Sugges
           )}
         </div>
       </div>
+      {waiting > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {waiting} email{waiting === 1 ? " is" : "s are"} waiting to be read. If the AI is busy, GradPonto retries
+          automatically: in the background whenever you open this page, and once a day.
+        </p>
+      )}
 
       {suggestions.length === 0 ? (
         <EmptyState

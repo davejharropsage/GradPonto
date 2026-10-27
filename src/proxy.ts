@@ -23,6 +23,8 @@ const PUBLIC = [
   /^\/api\/auth\/oauth\//,
   // The inbound email provider's webhook; it authenticates itself (see the route).
   /^\/api\/inbound\//,
+  // Vercel's scheduled jobs; each route checks CRON_SECRET itself.
+  /^\/api\/cron\//,
   // Sentry's tunnel (next.config.ts): browser error reports, including from signed-out pages.
   /^\/monitoring(\/|$)/,
 ];

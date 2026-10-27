@@ -85,6 +85,10 @@ export function sentryOptions() {
     sendDefaultPii: false,
     // A tenth of requests get performance traces: enough to spot slow pages, cheap on the free plan.
     tracesSampleRate: 0.1,
+    // Send each trace as one transaction (not streamed span by span), so beforeSendTransaction below
+    // scrubs it: with the SDK's default 'stream' lifecycle, that hook is silently skipped and span
+    // URLs would leave with their query strings.
+    traceLifecycle: "static" as const,
     beforeSend: scrubEvent,
     beforeSendTransaction: scrubEvent,
   };

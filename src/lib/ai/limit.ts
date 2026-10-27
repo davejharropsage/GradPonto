@@ -3,7 +3,7 @@ import { requireRegisteredUser } from "@/lib/auth/user";
 import { isRateLimitedKey } from "@/lib/auth/rate-limit";
 import { takeDailyAllowance } from "@/lib/limits";
 
-// The free Gemini key has a small daily allowance shared by everyone using the app, so each person
+// Every AI request costs money (Claude) or free allowance shared by everyone (Gemini), so each person
 // gets a fair share per hour. Call this before any AI request; it also confirms they are signed in.
 const AI_CALLS_PER_HOUR = 30;
 
