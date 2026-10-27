@@ -41,7 +41,7 @@ export default async function EmailImportPage() {
   const { suggestions, waiting, received, lastSkipped } = await getEmailImportOverview();
 
   // Emails still waiting (the AI was busy when they arrived): retry in the background now, after the
-  // page has been sent, rather than leaving it to the "Process" button or the 15-minute schedule.
+  // page has been sent, rather than leaving it to the "Process" button or the daily schedule.
   if (waiting > 0) {
     after(async () => {
       try {

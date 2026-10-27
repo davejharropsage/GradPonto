@@ -29,7 +29,8 @@ GradPonto is made of a few online services. Nothing runs on your own computer.
 | **Vercel** | Hosts the website, and builds and publishes every change. Holds all the passwords and keys (as *environment variables*). | [vercel.com](https://vercel.com) → team *grad-ponto* → project *grad-ponto* |
 | **GitHub** | Stores the code. A change goes live when it's merged into the `main` branch. | [github.com/davejharropsage/GradPonto](https://github.com/davejharropsage/GradPonto) |
 | **Postgres database (Neon)** | Stores all the accounts and their data. Connected through Vercel. | Vercel → project → **Storage**, or [neon.tech](https://neon.tech) |
-| **Google Gemini** (or Anthropic Claude) | The AI behind Analyse a Job, the Application Reviewer and Email import. Charged per use once past the free allowance. | [aistudio.google.com](https://aistudio.google.com) |
+| **Anthropic Claude** | The AI behind Analyse a Job, the Application Reviewer and Email import. Pay as you go (about $0.03 per active user a month), with a monthly spend limit. | [console.anthropic.com](https://console.anthropic.com) |
+| **Google Gemini** | Free backup AI, used automatically when Claude fails or hits its spend limit. | [aistudio.google.com](https://aistudio.google.com) |
 | **Email provider (SMTP)** | Sends sign-up codes, password resets and welcome emails. | Whichever provider `SMTP_HOST` points at |
 | **Postmark** | Receives the emails users forward to Email import. Charged per email received. | [postmarkapp.com](https://postmarkapp.com) |
 | **Adzuna** | The job listings behind Find placements. Free, but limited to 250 searches a day. | [developer.adzuna.com](https://developer.adzuna.com) |
@@ -98,7 +99,7 @@ alerts can't arrive either**. In that case people will say sign-up codes aren't 
 3. **Admin → Usage** in GradPonto: has a cap been reached?
 4. **Vercel → project → Deployments:** did the last deployment fail (red), or did problems start just
    after one?
-5. **The provider's own dashboard or status page:** Gemini, your email provider, Postmark, Neon.
+5. **The provider's own dashboard or status page:** Anthropic, Gemini, your email provider, Postmark, Neon.
 
 ### Common problems
 
@@ -106,7 +107,7 @@ alerts can't arrive either**. In that case people will say sign-up codes aren't 
 |---|---|---|
 | The whole site is down or every page errors | A bad deployment, or the database is unreachable | Vercel → **Deployments**, find the last one that worked → **⋯ → Instant Rollback**. That brings the old version straight back. Then check Neon's status page. |
 | Sign-up or reset codes don't arrive | Email provider down, password changed, or the email cap reached | Check the alert or logs for "Could not send". Check your email provider's dashboard and `MAIL_DAILY_LIMIT` on Admin → Usage. Developers can test with `npm run mail:test`. |
-| "The AI service rejected the request" | The Gemini key is wrong, expired or out of credit | Check the key in Google AI Studio, update `GEMINI_API_KEY` in Vercel, then redeploy. |
+| "The AI service rejected the request", or a "Claude requests are failing" alert | The Claude key is wrong or revoked, or the monthly spend limit is reached (Gemini takes over meanwhile, if its key is set) | Claude Console → **Billing** (raise the limit or add credit) and **API keys**. A new key goes in `ANTHROPIC_API_KEY` in Vercel, then redeploy. For Gemini, the same in Google AI Studio and `GEMINI_API_KEY`. |
 | "AI features have reached their limit for today" | `AI_DAILY_LIMIT` reached | Wait until tomorrow, or raise the cap if the use is genuine (see above). |
 | "Search is very busy" / "limit for today" in Find placements | Adzuna's shared allowance is used up | Nothing to fix; it resets daily. |
 | Email import shows nothing new | Forwarding isn't reaching Postmark, or Postmark can't reach the site | Postmark → **Activity**: no emails means check the Wix MX record (`in` → `inbound.postmarkapp.com`). Errors on the webhook mean check that `INBOUND_WEBHOOK_SECRET` in Vercel matches the password in Postmark's webhook URL. |
@@ -115,7 +116,7 @@ alerts can't arrive either**. In that case people will say sign-up codes aren't 
 
 ### If a password or key leaks
 
-Change it at the provider first (for example, create a new Gemini key and delete the old one). Then
+Change it at the provider first (for example, create a new Claude key in the Claude Console and delete the old one). Then
 update the matching variable in Vercel and redeploy. If `AUTH_SECRET` leaks, change it: any sign-up
 or reset codes and Google/Microsoft sign-ins in progress stop working (people just ask for a new
 code), and nobody's data is affected. If a

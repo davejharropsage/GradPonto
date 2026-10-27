@@ -15,7 +15,7 @@ The public marketing page is at `/landing` and its **Get started free** button l
 - **ORM:** Prisma 6 (pinned to `6.19.3`, classic engine — see [ARCHITECTURE.md](ARCHITECTURE.md) for why)
 - **Styling:** Tailwind CSS v4, dark mode via `next-themes`
 - **UI components:** shadcn/ui (built on `@base-ui/react`)
-- **AI:** Google Gemini (free key from AI Studio) via plain `fetch`; `@anthropic-ai/sdk` kept as an optional fallback. The app works fully without a key, with the AI features simply disabled
+- **AI:** Anthropic Claude (Haiku 5.5, pay as you go) via `@anthropic-ai/sdk`, with Google Gemini (free key from AI Studio, plain `fetch`) as the backup. The app works fully without a key, with the AI features simply disabled
 - **PDF export:** `@react-pdf/renderer`
 - **Package manager:** npm
 
@@ -57,7 +57,7 @@ src/
     db.ts                  Prisma client singleton
     validations.ts          zod schemas for every form
     labels.ts                Enum → human label / colour maps, shared between server and client
-    ai/                      client.ts (generateText: Gemini, or Claude as fallback; JSON helper), limit.ts (per-user hourly allowance), tailor.ts, analyze-job.ts, match-cv.ts
+    ai/                      client.ts (generateText: Claude, falling back to Gemini; JSON helper), limit.ts (per-user hourly allowance), tailor.ts, analyze-job.ts, match-cv.ts
     pdf/render.ts             React-PDF template + render-to-buffer helper
     data/                    Read-only query functions, one file per entity
     actions/                 `"use server"` mutations, one file per entity
@@ -124,16 +124,17 @@ Three features use AI, and all three are entirely optional — each degrades gra
 - **Analyse a Job** — paste a job posting (or a URL, via "Auto-fill", which does a plain server-side fetch-and-strip-HTML first) and the AI extracts title, company, location, salary, and deadline, which pre-fill a new application.
 - **Application Reviewer** (`/check-cv`, formerly "Check My CV") — a tabbed page for CV/cover-letter tools. Today it has one working tab, **Job Match**, which compares a saved CV against a specific application's job description and returns a match score, strengths, gaps, and concrete suggestions. Health Check, ATS Keywords, and Cover Letter are reserved tabs, shown as "coming soon" until they ship.
 
-They use Google's Gemini API. To enable them:
+They use Anthropic's Claude API, with Google's Gemini API as a free backup. Either key alone is enough. To enable them:
 
-1. Create a free key in Google AI Studio: <https://aistudio.google.com/apikey> ([guide](https://aistudio.google.com/docs/get-started)).
-2. Add it to `.env` (which is git-ignored — never commit a key):
+1. Create a key in the Claude Console: <https://console.anthropic.com/settings/keys>, and set a monthly spend limit under **Billing**. Optionally also create a free Gemini key in Google AI Studio: <https://aistudio.google.com/apikey>.
+2. Add them to `.env` (which is git-ignored — never commit a key):
    ```
+   ANTHROPIC_API_KEY=...
    GEMINI_API_KEY=...
    ```
 3. Restart the dev server.
 
-The model defaults to `gemini-3.8-flash`; set `GEMINI_MODEL` to change it. If `GEMINI_API_KEY` is empty but `ANTHROPIC_API_KEY` is set, Claude is used instead. The free tier has a small shared allowance, so each person is limited to 30 AI requests an hour (`src/lib/ai/limit.ts`), and a friendly message is shown if Google's limit is reached.
+Claude is tried first, with `claude-haiku-5-5` at low effort (set `CLAUDE_MODEL` to change it). If Claude fails (an outage, or the spend limit is reached), the request falls back to Gemini, whose model defaults to `gemini-3.8-flash` (`GEMINI_MODEL`). Each person is limited to 30 AI requests an hour (`src/lib/ai/limit.ts`), on top of the daily caps in `src/lib/limits.ts`.
 
 AI-generated document content is always labeled with an "AI drafted" badge so you remember to review it before using it.
 

@@ -50,7 +50,7 @@ export function HealthCheckTab({
 
       {!aiAvailable && (
         <p className="text-sm text-muted-foreground">
-          Add <code className="rounded bg-muted px-1 py-0.5">GEMINI_API_KEY</code> to <code className="rounded bg-muted px-1 py-0.5">.env</code> to enable the health check.
+          Add <code className="rounded bg-muted px-1 py-0.5">ANTHROPIC_API_KEY</code> or <code className="rounded bg-muted px-1 py-0.5">GEMINI_API_KEY</code> to <code className="rounded bg-muted px-1 py-0.5">.env</code> to enable the health check.
         </p>
       )}
 
