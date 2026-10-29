@@ -97,11 +97,12 @@ export default function PrivacyPage() {
         <p className="mt-2 text-muted-foreground">
           Where an AI feature is switched on and you choose to use it (job description analysis, CV matching, ATS
           keyword checking, document generation/tailoring, or Email import), the specific text involved (a job
-          description, your CV, a draft document, or a forwarded email) is sent to Anthropic&apos;s Claude API to produce a response, with Google&apos;s Gemini
-          API used only as a fallback if Claude is unavailable. No other account data is included in that request, and
-          nothing is sent if you don&apos;t use these features. These providers are based outside the UK; sending data
-          to them is an international transfer, and we rely on their standard contractual safeguards for this. Each
-          provider processes the text under its own privacy policy and does not use it to identify you.
+          description, your CV, a draft document, or a forwarded email) is sent to Anthropic&apos;s Claude API to
+          produce a response. No other account data is included in that request, and nothing is sent if you don&apos;t
+          use these features. Under Anthropic&apos;s commercial terms, text sent through its API is not used to train
+          its models; Anthropic may keep it for a limited time to detect misuse. Anthropic is based outside the UK, so
+          sending data to it is an international transfer, and we rely on its standard contractual safeguards for
+          this.
         </p>
       </section>
 
@@ -120,8 +121,8 @@ export default function PrivacyPage() {
             you) are set aside at this point and go no further.
           </li>
           <li>
-            The text of the remaining emails is sent to our AI provider (Anthropic&apos;s Claude API, or Google&apos;s
-            Gemini API as a fallback; see &ldquo;AI features&rdquo;) to work out the company, role and stage. The full
+            The text of the remaining emails is sent to our AI provider (Anthropic&apos;s Claude API; see &ldquo;AI
+            features&rdquo;) to work out the company, role and stage. The full
             text is deleted as soon as it has been read.
           </li>
           <li>

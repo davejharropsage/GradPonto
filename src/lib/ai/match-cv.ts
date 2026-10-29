@@ -24,7 +24,7 @@ export async function matchCvToJob(cvContent: string, jobDescription: string): P
       "",
       `CV:\n${cvContent}`,
     ].join("\n"),
-    { json: true, maxTokens: 1200 }
+    { maxTokens: 1200 }
   );
   return extractJson<CvMatch>(raw);
 }

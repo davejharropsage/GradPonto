@@ -76,7 +76,7 @@ export async function classifyEmails(emails: EmailForClassification[]): Promise<
         }))
       ),
     ].join("\n"),
-    { json: true, maxTokens: 300 * emails.length + 200 }
+    { maxTokens: 300 * emails.length + 200 }
   );
 
   const parsed = answerSchema.safeParse(extractJson<unknown>(raw));

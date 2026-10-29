@@ -26,7 +26,7 @@ export async function analyzeJobDescription(jobText: string): Promise<JobAnalysi
       "Job posting:",
       jobText,
     ].join("\n"),
-    { json: true, maxTokens: 1000 }
+    { maxTokens: 1000 }
   );
   return extractJson<JobAnalysis>(raw);
 }

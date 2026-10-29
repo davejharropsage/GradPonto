@@ -24,7 +24,7 @@ export async function reviewCvGenerally(cvContent: string): Promise<CvHealthChec
       "",
       `CV:\n${cvContent}`,
     ].join("\n"),
-    { json: true, maxTokens: 1000 }
+    { maxTokens: 1000 }
   );
   return extractJson<CvHealthCheck>(raw);
 }
@@ -44,7 +44,7 @@ export async function extractAtsKeywords(jobDescription: string): Promise<string
       "",
       `Job posting:\n${jobDescription}`,
     ].join("\n"),
-    { json: true, maxTokens: 600 }
+    { maxTokens: 600 }
   );
   return extractJson<{ keywords: string[] }>(raw).keywords;
 }

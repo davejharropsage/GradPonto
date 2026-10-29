@@ -9,9 +9,9 @@ import { prisma } from "@/lib/db";
  * Each cap can be changed with an environment variable, without a code change:
  */
 export const DAILY_LIMITS = {
-  /** Gemini/Claude requests for the whole app. */
+  /** Claude requests for the whole app. */
   AI: { env: "AI_DAILY_LIMIT", fallback: 1000 },
-  /** Gemini/Claude requests per person. */
+  /** Claude requests per person. */
   AI_PER_USER: { env: "AI_DAILY_LIMIT_PER_USER", fallback: 100 },
   /** Adzuna searches for the whole app (the free key allows 250 a day). */
   ADZUNA: { env: "ADZUNA_DAILY_LIMIT", fallback: 200 },

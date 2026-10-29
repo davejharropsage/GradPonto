@@ -30,7 +30,6 @@ GradPonto is made of a few online services. Nothing runs on your own computer.
 | **GitHub** | Stores the code. A change goes live when it's merged into the `main` branch. | [github.com/davejharropsage/GradPonto](https://github.com/davejharropsage/GradPonto) |
 | **Postgres database (Neon)** | Stores all the accounts and their data. Connected through Vercel. | Vercel → project → **Storage**, or [neon.tech](https://neon.tech) |
 | **Anthropic Claude** | The AI behind Analyse a Job, the Application Reviewer and Email import. Pay as you go (about $0.03 per active user a month), with a monthly spend limit. | [console.anthropic.com](https://console.anthropic.com) |
-| **Google Gemini** | Free backup AI, used automatically when Claude fails or hits its spend limit. | [aistudio.google.com](https://aistudio.google.com) |
 | **Email provider (SMTP)** | Sends sign-up codes, password resets and welcome emails. | Whichever provider `SMTP_HOST` points at |
 | **Postmark** | Receives the emails users forward to Email import. Charged per email received. | [postmarkapp.com](https://postmarkapp.com) |
 | **Adzuna** | The job listings behind Find placements. Free, but limited to 250 searches a day. | [developer.adzuna.com](https://developer.adzuna.com) |
@@ -68,7 +67,7 @@ email, and the count resets at midnight UTC. **Admin → Usage** shows today's n
 | Emails received by Email import, per person | `INBOUND_DAILY_LIMIT_PER_USER` | 150 a day |
 
 To raise a cap, set the variable in Vercel and redeploy. Also check the provider's own billing
-settings: Google AI Studio and Anthropic both let you set a monthly budget, which is a good second
+settings: the Claude Console (Billing) lets you set a monthly spend limit, which is a good second
 safety net.
 
 ## When something breaks
@@ -99,7 +98,7 @@ alerts can't arrive either**. In that case people will say sign-up codes aren't 
 3. **Admin → Usage** in GradPonto: has a cap been reached?
 4. **Vercel → project → Deployments:** did the last deployment fail (red), or did problems start just
    after one?
-5. **The provider's own dashboard or status page:** Anthropic, Gemini, your email provider, Postmark, Neon.
+5. **The provider's own dashboard or status page:** Anthropic, your email provider, Postmark, Neon.
 
 ### Common problems
 
@@ -107,7 +106,7 @@ alerts can't arrive either**. In that case people will say sign-up codes aren't 
 |---|---|---|
 | The whole site is down or every page errors | A bad deployment, or the database is unreachable | Vercel → **Deployments**, find the last one that worked → **⋯ → Instant Rollback**. That brings the old version straight back. Then check Neon's status page. |
 | Sign-up or reset codes don't arrive | Email provider down, password changed, or the email cap reached | Check the alert or logs for "Could not send". Check your email provider's dashboard and `MAIL_DAILY_LIMIT` on Admin → Usage. Developers can test with `npm run mail:test`. |
-| "The AI service rejected the request", or a "Claude requests are failing" alert | The Claude key is wrong or revoked, or the monthly spend limit is reached (Gemini takes over meanwhile, if its key is set) | Claude Console → **Billing** (raise the limit or add credit) and **API keys**. A new key goes in `ANTHROPIC_API_KEY` in Vercel, then redeploy. For Gemini, the same in Google AI Studio and `GEMINI_API_KEY`. |
+| "The AI service rejected the request", or a "Claude requests are failing" alert | The Claude key is wrong or revoked, or the monthly spend limit is reached | Claude Console → **Billing** (raise the limit or add credit) and **API keys**. A new key goes in `ANTHROPIC_API_KEY` in Vercel, then redeploy. |
 | "AI features have reached their limit for today" | `AI_DAILY_LIMIT` reached | Wait until tomorrow, or raise the cap if the use is genuine (see above). |
 | "Search is very busy" / "limit for today" in Find placements | Adzuna's shared allowance is used up | Nothing to fix; it resets daily. |
 | Email import shows nothing new | Forwarding isn't reaching Postmark, or Postmark can't reach the site | Postmark → **Activity**: no emails means check the Wix MX record (`in` → `inbound.postmarkapp.com`). Errors on the webhook mean check that `INBOUND_WEBHOOK_SECRET` in Vercel matches the password in Postmark's webhook URL. |

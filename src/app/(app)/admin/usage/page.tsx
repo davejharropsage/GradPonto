@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { getUsageToday } from "@/lib/data/admin";
 
 const meterLabels: Record<string, { title: string; unit: string }> = {
-  AI: { title: "AI (Gemini / Claude)", unit: "Requests" },
+  AI: { title: "AI (Claude)", unit: "Requests" },
   ADZUNA: { title: "Job search (Adzuna)", unit: "Real searches (cached repeats don't count)" },
   MAIL: { title: "Emails sent (SMTP)", unit: "Sign-up, reset and welcome emails" },
   INBOUND: { title: "Emails received (Email import)", unit: "Forwarded emails" },
