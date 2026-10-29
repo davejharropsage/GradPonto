@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   canonicalAddress,
+  describeEmailOutcome,
   eventToStatus,
   gmailFilterQuery,
   gmailSearchUrl,
@@ -378,4 +379,24 @@ test("parseInlineForward reads Outlook's original-message block and rejects plai
 
 test("htmlToText strips tags, styles and entities", () => {
   assert.equal(htmlToText("<style>p{}</style><p>Dear Lucas,</p><p>We&#39;re pleased</p>"), "Dear Lucas,\nWe're pleased");
+});
+
+test("describeEmailOutcome explains every outcome the pipeline records", () => {
+  assert.deepEqual(describeEmailOutcome("QUEUED", null), { label: "Waiting to be read", tone: "waiting" });
+  assert.deepEqual(describeEmailOutcome("PROCESSING", null), { label: "Waiting to be read", tone: "waiting" });
+  assert.equal(describeEmailOutcome("DONE", "proposed").tone, "suggested");
+  for (const outcome of [
+    "no-change",
+    "duplicate",
+    "irrelevant",
+    "skipped:no-application-keywords",
+    "skipped:not-addressed-to-you",
+    "skipped:newsletter",
+    "skipped:job-alert",
+  ]) {
+    const { label, tone } = describeEmailOutcome("DONE", outcome);
+    assert.equal(tone, "ignored");
+    assert.notEqual(label, "Read, no suggestion", `${outcome} should have its own wording`);
+  }
+  assert.equal(describeEmailOutcome("DONE", "something-new").label, "Read, no suggestion");
 });

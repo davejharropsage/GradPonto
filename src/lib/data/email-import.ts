@@ -16,9 +16,12 @@ export async function getOrCreateInbox() {
   }
 }
 
+/** How many received emails the page lists (newest first). */
+export const RECENT_EMAILS_SHOWN = 50;
+
 export async function getEmailImportOverview() {
   const db = await userDb();
-  const [suggestions, waiting, received, lastSkipped] = await Promise.all([
+  const [suggestions, waiting, received, recent] = await Promise.all([
     db.emailSuggestion.findMany({
       where: { state: "PENDING" },
       orderBy: { receivedAt: "desc" },
@@ -27,11 +30,10 @@ export async function getEmailImportOverview() {
     db.inboundEmail.count({ where: { status: { in: ["QUEUED", "PROCESSING"] } } }),
     db.inboundEmail.count(),
     db.inboundEmail.findMany({
-      where: { outcome: { startsWith: "skipped:" } },
       orderBy: { createdAt: "desc" },
-      take: 5,
-      select: { id: true, subject: true, sender: true, outcome: true, createdAt: true },
+      take: RECENT_EMAILS_SHOWN,
+      select: { id: true, subject: true, sender: true, status: true, outcome: true, createdAt: true },
     }),
   ]);
-  return { suggestions, waiting, received, lastSkipped };
+  return { suggestions, waiting, received, recent };
 }

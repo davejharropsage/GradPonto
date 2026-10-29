@@ -657,3 +657,32 @@ export function parseInlineForward(text: string): InlineForward | null {
     text: lines.slice(i).join("\n").trim(),
   };
 }
+
+export type EmailOutcomeTone = "waiting" | "suggested" | "ignored";
+
+/**
+ * What happened to a received email, in words for the "Received emails" list on the Email import
+ * page, so nobody has to guess why something didn't become a suggestion.
+ */
+export function describeEmailOutcome(status: string, outcome: string | null): { label: string; tone: EmailOutcomeTone } {
+  if (status !== "DONE") return { label: "Waiting to be read", tone: "waiting" };
+  switch (outcome) {
+    case "proposed":
+      return { label: "Suggestion made", tone: "suggested" };
+    case "no-change":
+      return { label: "No change: the application is already at this stage", tone: "ignored" };
+    case "duplicate":
+      return { label: "Same update as another email", tone: "ignored" };
+    case "irrelevant":
+    case "skipped:no-application-keywords":
+      return { label: "Not about an application", tone: "ignored" };
+    case "skipped:not-addressed-to-you":
+      return { label: "Ignored: not sent to one of your addresses", tone: "ignored" };
+    case "skipped:newsletter":
+      return { label: "Ignored: job-board newsletter", tone: "ignored" };
+    case "skipped:job-alert":
+      return { label: "Ignored: job alert", tone: "ignored" };
+    default:
+      return { label: "Read, no suggestion", tone: "ignored" };
+  }
+}

@@ -3,24 +3,17 @@ import { MailX } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SetupCard } from "@/components/email-import/setup-card";
+import { ReceivedEmails } from "@/components/email-import/received-emails";
 import { SuggestionsPanel, type SuggestionView } from "@/components/email-import/suggestions-panel";
 import { requireRegisteredUser } from "@/lib/auth/user";
 import { getEmailImportOverview, getOrCreateInbox } from "@/lib/data/email-import";
 import { gmailFilterQuery, gmailSearchUrl } from "@/lib/inbound/core";
 import { inboundAddress, inboundConfigured } from "@/lib/inbound/config";
-import { formatRelativeTime } from "@/lib/format";
 import { processInboundQueue } from "@/lib/inbound/process";
 import { logError } from "@/lib/monitoring";
 
 // "Process now" (and the automatic retry when the page opens) classify queued emails; give them room.
 export const maxDuration = 60;
-
-const skipLabels: Record<string, string> = {
-  "skipped:not-addressed-to-you": "not sent to one of your addresses",
-  "skipped:newsletter": "job-board newsletter",
-  "skipped:job-alert": "job alert",
-  "skipped:no-application-keywords": "not about an application",
-};
 
 export default async function EmailImportPage() {
   if (!inboundConfigured()) {
@@ -38,7 +31,7 @@ export default async function EmailImportPage() {
 
   const user = await requireRegisteredUser();
   const inbox = await getOrCreateInbox();
-  const { suggestions, waiting, received, lastSkipped } = await getEmailImportOverview();
+  const { suggestions, waiting, received, recent } = await getEmailImportOverview();
 
   // Emails still waiting (the AI was busy when they arrived): retry in the background now, after the
   // page has been sent, rather than leaving it to the "Process" button or the daily schedule.
@@ -105,26 +98,7 @@ export default async function EmailImportPage() {
         }}
       />
 
-      {lastSkipped.length > 0 && (
-        <div className="space-y-2 text-sm">
-          <h2 className="font-medium">Recently ignored</h2>
-          <p className="text-muted-foreground">
-            If something here should have been read, check its address is in &ldquo;Your email addresses&rdquo; above and forward it again.
-          </p>
-          <ul className="divide-y rounded-md border">
-            {lastSkipped.map((email) => (
-              <li key={email.id} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2">
-                <span className="min-w-0 truncate">
-                  {email.subject} <span className="text-muted-foreground">· {email.sender}</span>
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {skipLabels[email.outcome ?? ""] ?? email.outcome} · {formatRelativeTime(email.createdAt)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ReceivedEmails emails={recent} total={received} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { safeEqual } from "@/lib/auth/oauth-core";
-import { usersWithWaitingEmails } from "@/lib/auth/inbound";
+import { deleteExpiredEmailImportData, usersWithWaitingEmails } from "@/lib/auth/inbound";
 import { processInboundQueue } from "@/lib/inbound/process";
 import { logError } from "@/lib/monitoring";
 
@@ -15,7 +15,8 @@ const USERS_PER_RUN = 20;
  * still waiting because the AI was busy or out of allowance when they arrived, so nobody has to
  * press "Process" on the Email import page. Daily (05:17 UTC): Vercel's Hobby plan allows no more
  * often; on Pro it can run every 15 minutes. Opening the Email import page also retries. Vercel calls it with `Authorization: Bearer
- * <CRON_SECRET>`; anything else gets a 401.
+ * <CRON_SECRET>`; anything else gets a 401. It also deletes Email import data past its retention
+ * period (deleteExpiredEmailImportData).
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
@@ -25,6 +26,12 @@ export async function GET(request: Request) {
   }
 
   const started = Date.now();
+  let expired = { emails: 0, suggestions: 0 };
+  try {
+    expired = await deleteExpiredEmailImportData();
+  } catch (error) {
+    logError("Email import retention clean-up", error);
+  }
   const users = await usersWithWaitingEmails(USERS_PER_RUN);
   let classified = 0;
   let created = 0;
@@ -45,5 +52,5 @@ export async function GET(request: Request) {
       logError("Scheduled inbound retry", error, { userId });
     }
   }
-  return Response.json({ ok: true, usersWaiting: users.length, processedUsers, classified, created });
+  return Response.json({ ok: true, expired, usersWaiting: users.length, processedUsers, classified, created });
 }

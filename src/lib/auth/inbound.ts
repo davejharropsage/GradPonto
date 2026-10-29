@@ -34,3 +34,21 @@ export async function usersWithWaitingEmails(limit: number): Promise<string[]> {
   });
   return rows.map((row) => row.userId);
 }
+
+/** How long Email import keeps what it received, once it's dealt with (stated in the privacy policy). */
+export const EMAIL_IMPORT_RETENTION_DAYS = 90;
+
+/**
+ * Deletes everyone's received emails and reviewed suggestions older than the retention period,
+ * from the daily /api/cron/process-inbound run. Cross-user, so it lives here with the raw client.
+ * Emails still waiting to be read and suggestions still waiting for review are kept, however old;
+ * applications created from approved suggestions are the user's own data and aren't touched.
+ */
+export async function deleteExpiredEmailImportData(now = new Date()) {
+  const cutoff = new Date(now.getTime() - EMAIL_IMPORT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const [emails, suggestions] = await prisma.$transaction([
+    prisma.inboundEmail.deleteMany({ where: { status: "DONE", createdAt: { lt: cutoff } } }),
+    prisma.emailSuggestion.deleteMany({ where: { state: { not: "PENDING" }, resolvedAt: { lt: cutoff } } }),
+  ]);
+  return { emails: emails.count, suggestions: suggestions.count };
+}

@@ -12,13 +12,16 @@ function withoutOwner<T extends { userId: string }>(row: T): Omit<T, "userId"> {
 
 export async function getBackupData() {
   const [user, db] = await Promise.all([requireRegisteredUser(), userDb()]);
-  const [employers, applications, baseDocuments, goals] = await Promise.all([
+  const [employers, applications, baseDocuments, goals, inbox, receivedEmails, emailSuggestions] = await Promise.all([
     db.employer.findMany(),
     db.application.findMany({
       include: { documents: true, activities: true },
     }),
     db.document.findMany({ where: { applicationId: null } }),
     db.goal.findMany(),
+    db.emailInbox.findUnique({ where: { userId: user.id } }),
+    db.inboundEmail.findMany({ orderBy: { createdAt: "asc" } }),
+    db.emailSuggestion.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
 
   return {
@@ -33,6 +36,13 @@ export async function getBackupData() {
     })),
     baseDocuments: baseDocuments.map(withoutOwner),
     goals: goals.map(withoutOwner),
+    // Email import, so the download is a complete copy of the user's data (privacy policy). Restore
+    // ignores it: the forwarding address and email history belong to this account, not a backup.
+    emailImport: {
+      inbox: inbox && withoutOwner(inbox),
+      receivedEmails: receivedEmails.map((email) => withoutOwner({ ...email, claimId: undefined })),
+      suggestions: emailSuggestions.map(withoutOwner),
+    },
   };
 }
 
